@@ -21,3 +21,19 @@ html{scroll-padding-top:82px}body{overflow-x:hidden}input,textarea,button{font-s
 .login-3d #loginStatus{min-height:1.4em}
 @media(max-width:520px){.admin-main:has(.login-3d){padding-top:25px;padding-bottom:45px}.login-3d{transform:none;margin:19px auto;padding:27px 21px;border-radius:22px;box-shadow:11px 12px 0 #e6dcc7,17px 22px 38px #243a2918,inset 1px 1px 0 #fff}.login-3d::after{width:78px;height:78px;inset:18px auto auto 17px}.login-emblem{width:54px;height:54px;margin-bottom:17px}}
 @media(prefers-reduced-motion:reduce){.login-3d,.login-3d *{transition:none!important}}
+/* Refined 3D treatment for the customer order form. */
+.order-form-3d{position:relative;isolation:isolate;overflow:hidden;transform:rotateX(1deg) rotateY(-1deg);background:linear-gradient(145deg,#fffdf7,#f3ead8);border:1px solid #e5dac3;border-radius:24px;box-shadow:17px 19px 0 #e6dcc7,24px 30px 58px #243a2918,inset 1px 1px 0 #fff;transition:transform .25s ease,box-shadow .25s ease}
+.order-form-3d::before{content:"";position:absolute;z-index:-1;width:210px;height:210px;right:-104px;top:-112px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fffdf7,#ecdfc6 72%);box-shadow:inset 7px 7px 18px #ffffffa8,inset -8px -8px 17px #d7cbb280;pointer-events:none}
+.order-form-3d .form-heading,.order-form-3d .fields,.order-form-3d .consent,.order-form-3d>.button,.order-form-3d>#formStatus{position:relative}
+.order-form-3d .form-icon{background:linear-gradient(145deg,#fffdf7,#e8ddc5);box-shadow:5px 6px 12px #d7cbb280,-5px -5px 11px #fff,inset 1px 1px #fff}
+.order-form-3d .fields input,.order-form-3d .fields textarea{border:0;border-radius:12px;background:#f8f3e9;box-shadow:inset 4px 4px 9px #ded4c3,inset -4px -4px 9px #fff;transition:box-shadow .2s ease}
+.order-form-3d .fields input:focus,.order-form-3d .fields textarea:focus{outline:0;box-shadow:inset 4px 4px 8px #ded4c3,inset -4px -4px 8px #fff,0 0 0 3px #dba73a70}
+.order-form-3d .quantity-control{border:0;border-radius:12px;background:#f8f3e9;box-shadow:inset 4px 4px 9px #ded4c3,inset -4px -4px 9px #fff}
+.order-form-3d .quantity-control button{background:transparent;transition:transform .15s ease,color .15s ease}
+.order-form-3d .quantity-control button:active{transform:scale(.84);color:#c18124}
+.order-form-3d>.button{min-height:55px;border:1px solid #365b3c;border-radius:13px;box-shadow:0 7px 0 #193522,0 13px 22px #19352230,inset 0 1px 0 #ffffff35;transition:transform .15s ease,box-shadow .15s ease}
+.order-form-3d>.button:hover{transform:translateY(-2px);box-shadow:0 9px 0 #193522,0 15px 24px #19352230,inset 0 1px 0 #ffffff35}
+.order-form-3d>.button:active{transform:translateY(4px);box-shadow:0 3px 0 #193522,0 7px 12px #19352225}
+@media(max-width:800px){.order-form-3d{transform:none}}
+@media(max-width:520px){.order-form-3d{padding:23px 17px;border-radius:21px;box-shadow:11px 12px 0 #e6dcc7,17px 22px 38px #243a2918,inset 1px 1px 0 #fff}}
+@media(prefers-reduced-motion:reduce){.order-form-3d,.order-form-3d *{transition:none!important}}
