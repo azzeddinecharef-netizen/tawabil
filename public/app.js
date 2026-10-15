@@ -52,7 +52,7 @@ function mediaCard(item, index) {
   info.append(type, heading); article.append(frame, info); return article;
 }
 
-fetch(`${API}/settings`).then(async response => { const result = await response.json(); if (!response.ok) throw Error(result.error); return result; }).then(settings => {
+fetch(`${API}?route=settings`).then(async response => { const result = await response.json(); if (!response.ok) throw Error(result.error); return result; }).then(settings => {
   if (settings.title) { $('productTitle').innerHTML = `${escapeHtml(settings.title).replace(/،/g, '،<br>')}`; document.title = `${settings.title} | نكهة بسكرة`; }
   if (settings.description) $('productDescription').textContent = settings.description;
   if (settings.price) { $('productPrice').textContent = settings.price; $('priceBox').hidden = false; }
@@ -72,7 +72,7 @@ $('orderForm').addEventListener('submit', async event => {
   button.disabled = true; status.className = ''; status.textContent = 'جارٍ إرسال طلبك…';
   const data = Object.fromEntries(new FormData(form)); data.quantity = Number(data.quantity); data.consent = form.elements.consent.checked;
   try {
-    const response = await fetch(`${API}/orders`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+    const response = await fetch(`${API}?route=orders`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
     const result = await response.json(); if (!response.ok) throw Error(result.error);
     form.reset(); quantity.value = '1'; status.textContent = 'وصلنا طلبك بنجاح. سنتواصل معك هاتفيًا لتأكيده، شكرًا لثقتك!';
   } catch (error) { status.className = 'error'; status.textContent = error.message || 'تعذر إرسال الطلب. حاول مجددًا.'; }

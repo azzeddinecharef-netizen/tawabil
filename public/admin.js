@@ -6,7 +6,9 @@ let token = sessionStorage.getItem('courseAdminToken') || '';
 async function api(path, options = {}) {
   const headers = { ...(options.headers || {}) };
   if (token) headers.Authorization = `Bearer ${token}`;
-  const response = await fetch(`${API}/${path}`, { ...options, headers });
+  const url = new URL(API);
+  url.searchParams.set('route', path);
+  const response = await fetch(url, { ...options, headers });
   const data = await response.json();
   if (!response.ok) {
     if (response.status === 401) { token = ''; sessionStorage.removeItem('courseAdminToken'); $('dashboard').hidden = true; $('login').hidden = false; orders = []; $('rows').replaceChildren(); $('ordersMobile').replaceChildren(); }
