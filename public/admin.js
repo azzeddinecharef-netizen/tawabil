@@ -41,6 +41,19 @@ function makeStatusControl(order) {
   control.append(select); return control;
 }
 
+function makeDeleteButton(order) {
+  const button = document.createElement('button'); button.type = 'button'; button.className = 'delete-order'; button.textContent = 'حذف الطلب'; button.setAttribute('aria-label', `حذف الطلب رقم ${order.id}`);
+  button.addEventListener('click', async () => {
+    if (!window.confirm(`هل تريد حذف الطلب #${order.id} نهائيًا؟ لا يمكن التراجع عن هذا الحذف.`)) return;
+    button.disabled = true;
+    try {
+      await api('order-delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ orderId: order.id }) });
+      orders = orders.filter(item => item.id !== order.id); renderOrders(); $('adminStatus').textContent = `تم حذف الطلب #${order.id} نهائيًا.`;
+    } catch (error) { button.disabled = false; $('adminStatus').textContent = error.message; }
+  });
+  return button;
+}
+
 function renderOrders() {
   const query = $('search').value.trim().toLocaleLowerCase('ar');
   const countByStatus = Object.fromEntries(orderStatuses.map(([status]) => [status, orders.filter(order => (order.status || 'new') === status).length]));
@@ -50,11 +63,11 @@ function renderOrders() {
   document.querySelectorAll('.status-filter').forEach(button => { const active = button.dataset.status === activeStatus; button.classList.toggle('is-active', active); button.setAttribute('aria-pressed', String(active)); });
   const rows = document.createDocumentFragment(), cards = document.createDocumentFragment();
   if (!visible.length) {
-    const row = document.createElement('tr'), cell = document.createElement('td'); cell.colSpan = 9; cell.className = 'empty-orders'; cell.textContent = orders.length ? 'لا توجد طلبات في هذا القسم تطابق البحث.' : 'لم يصل أي طلب بعد. ستظهر الطلبات الجديدة هنا.'; row.append(cell); rows.append(row);
+    const row = document.createElement('tr'), cell = document.createElement('td'); cell.colSpan = 10; cell.className = 'empty-orders'; cell.textContent = orders.length ? 'لا توجد طلبات في هذا القسم تطابق البحث.' : 'لم يصل أي طلب بعد. ستظهر الطلبات الجديدة هنا.'; row.append(cell); rows.append(row);
     const empty = document.createElement('div'); empty.className = 'order-card empty-orders'; empty.textContent = cell.textContent; cards.append(empty);
   } else for (const order of visible) {
     const row = document.createElement('tr');
-    addCell(row, 'رقم', `#${order.id}`); addCell(row, 'الاسم الكامل', order.fullName); addCell(row, 'الهاتف', order.phone, 'ltr'); addCell(row, 'الولاية', order.wilaya); addCell(row, 'عنوان التوصيل', order.address); addCell(row, 'الكمية', String(order.quantity)); addCell(row, 'ملاحظة', order.notes); const statusCell = document.createElement('td'); statusCell.dataset.label = 'الحالة'; statusCell.append(makeStatusControl(order)); row.append(statusCell); addCell(row, 'وقت الطلب', dateLabel(order.createdAt)); rows.append(row);
+    addCell(row, 'رقم', `#${order.id}`); addCell(row, 'الاسم الكامل', order.fullName); addCell(row, 'الهاتف', order.phone, 'ltr'); addCell(row, 'الولاية', order.wilaya); addCell(row, 'عنوان التوصيل', order.address); addCell(row, 'الكمية', String(order.quantity)); addCell(row, 'ملاحظة', order.notes); const statusCell = document.createElement('td'); statusCell.dataset.label = 'الحالة'; statusCell.append(makeStatusControl(order)); row.append(statusCell); addCell(row, 'وقت الطلب', dateLabel(order.createdAt)); const actionCell = document.createElement('td'); actionCell.dataset.label = 'إجراء'; actionCell.append(makeDeleteButton(order)); row.append(actionCell); rows.append(row);
     const card = document.createElement('article'); card.className = 'order-card';
     const head = document.createElement('div'); head.className = 'order-card-head';
     const name = document.createElement('strong'); name.textContent = order.fullName || 'طلب جديد';
@@ -64,7 +77,7 @@ function renderOrders() {
       const item = document.createElement('div'); if (className) item.className = className;
       const term = document.createElement('dt'); term.textContent = label; const description = document.createElement('dd'); description.textContent = value || '—'; if (className === 'ltr') description.dir = 'ltr'; item.append(term, description); details.append(item);
     }
-    card.append(head, details, makeStatusControl(order)); cards.append(card);
+    card.append(head, details, makeStatusControl(order), makeDeleteButton(order)); cards.append(card);
   }
   $('rows').replaceChildren(rows); $('ordersMobile').replaceChildren(cards);
   $('adminStatus').textContent = `آخر تحديث: ${new Date().toLocaleTimeString('ar-DZ')}`;

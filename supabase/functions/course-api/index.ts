@@ -121,6 +121,14 @@ Deno.serve(async (request: Request) => {
     if (error) return fail(request, 'تعذر تحديث حالة الطلب.', 503);
     return data ? reply(request, { ok: true }) : fail(request, 'لم يتم العثور على هذا الطلب.', 404);
   }
+  if (path === 'order-delete' && request.method === 'POST') {
+    if (!await authorized(request)) return fail(request, 'انتهت الجلسة. سجّل الدخول مجددًا.', 401);
+    const body = await json(request);
+    if (!body || !Number.isSafeInteger(body.orderId) || body.orderId < 1) return fail(request, 'تحقق من رقم الطلب.', 400);
+    const { data, error } = await db.from('orders').delete().eq('id', body.orderId).select('id').maybeSingle();
+    if (error) return fail(request, 'تعذر حذف الطلب.', 503);
+    return data ? reply(request, { ok: true }) : fail(request, 'لم يتم العثور على هذا الطلب.', 404);
+  }
   if (path === 'settings' && request.method === 'POST') {
     if (!await authorized(request)) return fail(request, 'انتهت الجلسة. سجّل الدخول مجددًا.', 401);
     const body = await json(request);
