@@ -3,57 +3,91 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#e5e7ec">
+  <meta name="theme-color" content="#f4f6f8">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; media-src 'self' https:; frame-src https://www.youtube-nocookie.com https://drive.google.com; connect-src 'self' https://cawroeqwtuxfmaqxuypd.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
-  <title>طلبات باك التوابل | نكهة بسكرة</title>
-  <link rel="stylesheet" href="style.css"><link rel="stylesheet" href="mobile.css?v=admin-order-manage-8">
-  <script src="admin.js?v=admin-order-manage-8" defer></script>
+  <title>إدارة الطلبات | نكهة بسكرة</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="mobile.css?v=admin-dashboard-1">
+  <link rel="stylesheet" href="admin-dashboard.css?v=admin-dashboard-1">
+  <script src="admin.js?v=admin-dashboard-1" defer></script>
 </head>
-<body>
-  <header class="nav wrap"><a href="./" class="brand"><span class="brand-mark" aria-hidden="true">✳</span><span>نكهة بسكرة<small>لوحة إدارة الباك</small></span></a><a class="button small" href="./">صفحة الزبائن ↗</a></header>
+<body class="admin-page">
+  <header id="admin-login-nav" class="nav wrap admin-login-nav"><a href="./" class="brand"><span class="brand-mark" aria-hidden="true">✳</span><span>نكهة بسكرة<small>لوحة إدارة الباك</small></span></a><a class="button small" href="./">صفحة الزبائن ↗</a></header>
   <main class="wrap admin-main">
     <form id="login" class="form-card login login-3d"><figure class="login-spice-photo"><img src="assets/biskria/admin-spices.jpg" alt="مجموعة من التوابل البسكرية" width="118" height="118" fetchpriority="high"></figure><p class="eyebrow">مساحة الإدارة</p><h1>أهلًا بك.</h1><p>أدخل كلمة مرور الإدارة لمشاهدة الطلبات وتعديل محتوى صفحة الباك.</p><label>كلمة المرور<input name="password" type="password" autocomplete="current-password" required></label><button class="button full-button" type="submit">دخول لوحة الإدارة <span aria-hidden="true">↙</span></button><p id="loginStatus" role="status" class="error"></p></form>
-    <section id="dashboard" hidden>
-      <div class="admin-head"><div><p class="eyebrow">لوحة الإدارة</p><h1>طلبات باك التوابل</h1><span id="count" class="badge"></span></div><button id="logout" class="button small" type="button">تسجيل الخروج</button></div>
-      <div class="toolbar"><input id="search" type="search" placeholder="ابحث بالاسم أو الهاتف أو الولاية…" aria-label="البحث في الطلبات"><button id="refresh" class="button small" type="button">تحديث الطلبات ↻</button></div>
-      <div id="statusFilters" class="status-filters" role="group" aria-label="تصفية الطلبات حسب الحالة">
-        <button class="status-filter is-active" type="button" data-status="new" aria-pressed="true">جديدة <span id="countNew">0</span></button>
-        <button class="status-filter" type="button" data-status="confirmed" aria-pressed="false">مؤكدة <span id="countConfirmed">0</span></button>
-        <button class="status-filter" type="button" data-status="rejected" aria-pressed="false">مرفوضة <span id="countRejected">0</span></button>
-        <button class="status-filter" type="button" data-status="all" aria-pressed="false">كل الطلبات <span id="countAll">0</span></button>
+
+    <section id="dashboard" class="admin-dashboard" hidden>
+      <aside class="admin-sidebar">
+        <a href="./" class="sidebar-brand"><span class="brand-mark" aria-hidden="true">✳</span><span>نكهة بسكرة<small>مركز إدارة الطلبات</small></span></a>
+        <p class="sidebar-caption">القائمة الرئيسية</p>
+        <nav class="admin-navigation" aria-label="التنقل في لوحة الإدارة">
+          <button type="button" class="admin-nav-link is-active" data-admin-view="overview" aria-current="page"><span class="nav-icon" aria-hidden="true">▦</span>نظرة عامة</button>
+          <button type="button" class="admin-nav-link" data-admin-view="orders"><span class="nav-icon" aria-hidden="true">☷</span>الطلبات <span id="sideCount" class="nav-count">0</span></button>
+          <button type="button" class="admin-nav-link" data-admin-view="settings"><span class="nav-icon" aria-hidden="true">⚙</span>محتوى الباك</button>
+        </nav>
+        <div class="sidebar-footer">
+          <div class="system-state"><span class="system-dot" aria-hidden="true"></span><span>النظام متصل<small>تزامن مباشر مع الطلبات</small></span></div>
+          <button id="logout" class="sidebar-logout" type="button"><span aria-hidden="true">↪</span> تسجيل الخروج</button>
+        </div>
+      </aside>
+
+      <div class="admin-workspace">
+        <header class="dashboard-topbar">
+          <div><p class="topbar-kicker">مساحة العمل / <span id="pageCrumb">نظرة عامة</span></p><h1 id="adminPageTitle">نظرة عامة</h1></div>
+          <div class="topbar-actions"><span id="lastUpdated" class="last-updated">—</span><button id="refresh" class="icon-button" type="button" aria-label="تحديث الطلبات" title="تحديث الطلبات">↻</button><a class="topbar-store-link" href="./">عرض صفحة الباك <span aria-hidden="true">↗</span></a></div>
+        </header>
+
+        <section class="admin-view" data-view-panel="overview">
+          <div class="welcome-banner"><div><span class="welcome-tag">نكهة بسكرة · متابعة الطلبات</span><h2>مرحبًا بعودتك 👋</h2><p>من هنا تتابع طلبات الزبائن وتدير محتوى باك التوابل بسهولة.</p></div><button class="button dashboard-primary" type="button" data-go-view="orders">استعراض الطلبات <span aria-hidden="true">←</span></button><span class="banner-decoration" aria-hidden="true">✳</span></div>
+          <div class="stats-grid" aria-label="ملخص الطلبات">
+            <article class="stat-card stat-total"><span class="stat-icon" aria-hidden="true">▤</span><span class="stat-label">كل الطلبات</span><strong id="statTotal">0</strong><span class="stat-foot">إجمالي الطلبات المسجلة</span></article>
+            <article class="stat-card stat-new"><span class="stat-icon" aria-hidden="true">◷</span><span class="stat-label">طلبات جديدة</span><strong id="statNew">0</strong><span class="stat-foot">تحتاج إلى المتابعة</span></article>
+            <article class="stat-card stat-confirmed"><span class="stat-icon" aria-hidden="true">✓</span><span class="stat-label">طلبات مؤكدة</span><strong id="statConfirmed">0</strong><span class="stat-foot">جاهزة للتوصيل والمتابعة</span></article>
+            <article class="stat-card stat-rejected"><span class="stat-icon" aria-hidden="true">×</span><span class="stat-label">طلبات مرفوضة</span><strong id="statRejected">0</strong><span class="stat-foot">الطلبات غير المكتملة</span></article>
+          </div>
+          <div class="overview-grid">
+            <article class="surface-card status-summary"><div class="surface-heading"><div><h2>حالة الطلبات</h2><p>توزيع الطلبات حسب مرحلة المتابعة</p></div><button type="button" class="text-action" data-go-view="orders">عرض الكل ←</button></div>
+              <div class="status-meter"><div class="meter-label"><span><i class="meter-dot dot-new"></i>جديدة</span><strong id="overviewNew">0</strong></div><div class="meter-track"><span id="meterNew" class="meter-fill fill-new"></span></div></div>
+              <div class="status-meter"><div class="meter-label"><span><i class="meter-dot dot-confirmed"></i>مؤكدة</span><strong id="overviewConfirmed">0</strong></div><div class="meter-track"><span id="meterConfirmed" class="meter-fill fill-confirmed"></span></div></div>
+              <div class="status-meter"><div class="meter-label"><span><i class="meter-dot dot-rejected"></i>مرفوضة</span><strong id="overviewRejected">0</strong></div><div class="meter-track"><span id="meterRejected" class="meter-fill fill-rejected"></span></div></div>
+            </article>
+            <article class="surface-card recent-summary"><div class="surface-heading"><div><h2>آخر الطلبات</h2><p>أحدث الطلبات التي وصلت إلى المتجر</p></div><span class="live-label"><i></i>مباشر</span></div><div id="recentOrders" class="recent-orders"><p class="recent-empty">جارٍ تحميل الطلبات…</p></div></article>
+          </div>
+        </section>
+
+        <section class="admin-view" data-view-panel="orders" hidden>
+          <div class="orders-intro"><div><p class="section-eyebrow">إدارة ومتابعة</p><h2>طلبات الزبائن</h2><p>ابحث في الطلبات، حدّث الحالة، أو افتح تفاصيل الطلب للتعديل.</p></div><div class="orders-intro-actions"><span id="count" class="orders-total-badge">0 طلب</span><button id="exportOrders" class="export-orders" type="button"><span aria-hidden="true">⇩</span> تصدير الطلبات</button></div></div>
+          <div class="orders-toolbar surface-card">
+            <div class="toolbar-search"><span aria-hidden="true">⌕</span><input id="search" type="search" placeholder="ابحث بالاسم أو الهاتف أو الولاية أو العنوان…" aria-label="البحث في الطلبات"><button id="clearSearch" class="clear-search" type="button" aria-label="مسح البحث" hidden>×</button></div>
+            <div class="filters-row"><div id="statusFilters" class="status-filters" role="group" aria-label="تصفية الطلبات حسب الحالة">
+              <button class="status-filter is-active" type="button" data-status="all" aria-pressed="true">الكل <span id="countAll">0</span></button>
+              <button class="status-filter" type="button" data-status="new" aria-pressed="false">جديدة <span id="countNew">0</span></button>
+              <button class="status-filter" type="button" data-status="confirmed" aria-pressed="false">مؤكدة <span id="countConfirmed">0</span></button>
+              <button class="status-filter" type="button" data-status="rejected" aria-pressed="false">مرفوضة <span id="countRejected">0</span></button>
+            </div><label class="sort-control">ترتيب حسب<select id="sortOrders" aria-label="ترتيب الطلبات"><option value="newest">الأحدث أولًا</option><option value="oldest">الأقدم أولًا</option><option value="quantity">الكمية الأكبر</option></select></label></div>
+            <div class="date-filters"><label>من تاريخ<input id="dateFrom" type="date" aria-label="من تاريخ"></label><span aria-hidden="true">←</span><label>إلى تاريخ<input id="dateTo" type="date" aria-label="إلى تاريخ"></label><button id="resetFilters" class="reset-filters" type="button">إعادة ضبط الفلاتر</button></div>
+          </div>
+          <p id="adminStatus" role="status" aria-live="polite" class="admin-status"></p>
+          <div class="table-wrap orders-table-wrap"><table><thead><tr><th>رقم الطلب</th><th>الاسم الكامل</th><th>رقم الهاتف</th><th>الولاية</th><th>عنوان التوصيل</th><th>الكمية</th><th>ملاحظات</th><th>الحالة</th><th>وقت الطلب</th><th>إجراء</th></tr></thead><tbody id="rows"></tbody></table></div>
+          <div id="ordersMobile" class="orders-mobile" aria-live="polite"></div>
+        </section>
+
+        <section class="admin-view" data-view-panel="settings" hidden>
+          <div class="orders-intro"><div><p class="section-eyebrow">تخصيص الواجهة</p><h2>محتوى الباك</h2><p>حدّث وصف الباك والسعر ومقاطع الفيديو والصوت التي تظهر للزبائن.</p></div></div>
+          <details class="settings-details" open><summary>معلومات الباك والوسائط</summary>
+            <form id="settingsForm">
+              <div class="settings-form-grid"><label>عنوان الباك<input name="title" maxlength="200" required></label><label class="settings-price">السعر <span class="optional">اختياري</span><input name="price" maxlength="100" placeholder="مثال: 2500 دج"></label><label class="settings-description">وصف الباك<textarea name="description" maxlength="3000" rows="5" required></textarea></label></div>
+              <div class="meta-settings"><h2>قياس إعلانات Meta</h2><p class="help-text">أدخل معرّف Pixel الرقمي من مدير أحداث Meta. سيُسجّل الموقع زيارة الصفحة، وحدث Lead بعد نجاح إرسال الطلب فقط. اتركه فارغًا لإيقاف القياس.</p><label>معرّف Meta Pixel<input name="pixelId" inputmode="numeric" autocomplete="off" dir="ltr" pattern="[0-9]{6,20}" maxlength="20" placeholder="مثال: 123456789012345"></label></div>
+              <div class="media-settings"><div class="surface-heading"><div><h2>الفيديوهات والرسائل الصوتية</h2><p class="help-text">أضف عنوانًا ورابطًا لكل مقطع ليظهر مدمجًا داخل صفحة الباك.</p></div></div><div id="mediaEditor" class="media-editor"></div><button id="addMedia" class="add-media" type="button">＋ إضافة فيديو أو مقطع صوتي</button></div>
+              <div class="settings-save-row"><button class="button settings-save" type="submit">حفظ محتوى الصفحة</button><p id="settingsStatus" class="settings-status" role="status" aria-live="polite"></p></div>
+            </form>
+          </details>
+        </section>
+
+        <dialog id="editOrderDialog" class="order-edit-dialog" aria-labelledby="editOrderHeading">
+          <form id="editOrderForm" class="order-edit-form"><input type="hidden" name="orderId"><div class="order-edit-heading"><div><p class="section-eyebrow">تحديث البيانات</p><h2 id="editOrderHeading">تعديل بيانات الطلب</h2><p id="editOrderNumber"></p></div><button id="cancelEditOrder" class="button small" type="button">إلغاء</button></div><div class="order-edit-fields"><label>الاسم الكامل<input name="fullName" type="text" maxlength="200" autocomplete="name" required></label><label>رقم الهاتف<input name="phone" type="tel" maxlength="25" autocomplete="tel" required></label><label>الولاية<input name="wilaya" type="text" maxlength="100" required></label><label>عنوان التوصيل<input name="address" type="text" maxlength="300" required></label><label>الكمية<input name="quantity" type="number" min="1" max="99" required></label><label>الحالة<select name="status"><option value="new">جديدة</option><option value="confirmed">مؤكدة</option><option value="rejected">مرفوضة</option></select></label><label class="order-edit-notes">ملاحظات<textarea name="notes" maxlength="1000" rows="3"></textarea></label></div><div class="order-edit-actions"><button class="button" type="submit">حفظ التعديلات</button></div></form>
+        </dialog>
       </div>
-      <p id="adminStatus" role="status"></p>
-      <div class="table-wrap"><table><thead><tr><th>رقم</th><th>الاسم الكامل</th><th>رقم الهاتف</th><th>الولاية</th><th>عنوان التوصيل</th><th>الكمية</th><th>ملاحظات</th><th>الحالة</th><th>وقت الطلب</th><th>إجراء</th></tr></thead><tbody id="rows"></tbody></table></div>
-      <div id="ordersMobile" class="orders-mobile" aria-live="polite"></div>
-      <dialog id="editOrderDialog" class="order-edit-dialog" aria-labelledby="editOrderHeading">
-        <form id="editOrderForm" class="order-edit-form">
-          <input type="hidden" name="orderId">
-          <div class="order-edit-heading"><div><h2 id="editOrderHeading">تعديل بيانات الطلب</h2><p id="editOrderNumber"></p></div><button id="cancelEditOrder" class="button small" type="button">إلغاء</button></div>
-          <div class="order-edit-fields">
-            <label>الاسم الكامل<input name="fullName" type="text" maxlength="200" autocomplete="name" required></label>
-            <label>رقم الهاتف<input name="phone" type="tel" maxlength="25" autocomplete="tel" required></label>
-            <label>الولاية<input name="wilaya" type="text" maxlength="100" required></label>
-            <label>عنوان التوصيل<input name="address" type="text" maxlength="300" required></label>
-            <label>الكمية<input name="quantity" type="number" min="1" max="99" required></label>
-            <label>الحالة<select name="status"><option value="new">جديدة</option><option value="confirmed">مؤكدة</option><option value="rejected">مرفوضة</option></select></label>
-            <label class="order-edit-notes">ملاحظات<textarea name="notes" maxlength="1000" rows="3"></textarea></label>
-          </div>
-          <div class="order-edit-actions"><button class="button" type="submit">حفظ التعديلات</button></div>
-        </form>
-      </dialog>
-      <details class="settings-details"><summary>إعدادات باك التوابل والمقاطع</summary>
-        <form id="settingsForm">
-          <label>عنوان الباك<input name="title" maxlength="200" required></label>
-          <label>وصف الباك<textarea name="description" maxlength="3000" rows="4" required></textarea></label>
-          <label>السعر <span class="optional">اختياري</span><input name="price" maxlength="100" placeholder="مثال: 2500 دج"></label>
-          <div class="meta-settings"><h2>قياس إعلانات Meta</h2><p class="help-text">أدخل معرّف Pixel الرقمي من مدير أحداث Meta. سيُسجّل الموقع زيارة الصفحة، وحدث Lead بعد نجاح إرسال الطلب فقط. اتركه فارغًا لإيقاف القياس.</p><label>معرّف Meta Pixel<input name="pixelId" inputmode="numeric" autocomplete="off" dir="ltr" pattern="[0-9]{6,20}" maxlength="20" placeholder="مثال: 123456789012345"></label></div>
-          <div class="media-settings"><h2>الفيديوهات والرسائل الصوتية</h2><p class="help-text">أضف عنوانًا ورابطًا لكل مقطع. تقبل الفيديوهات روابط YouTube أو Google Drive، وتظهر داخل صفحة الباك كمشغّل مدمج. للصوت استخدم رابط ملف مباشر أو رابط مشاركة Google Drive مضبوطًا على إمكانية العرض.</p>
-            <div id="mediaEditor" class="media-editor"></div>
-            <button id="addMedia" class="add-media" type="button">＋ إضافة فيديو أو مقطع صوتي</button>
-          </div>
-          <button class="button" type="submit">حفظ محتوى الصفحة</button><p id="settingsStatus" class="settings-status" role="status" aria-live="polite"></p>
-        </form>
-      </details>
     </section>
   </main>
 </body>
