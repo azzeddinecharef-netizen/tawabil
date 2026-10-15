@@ -10,6 +10,9 @@ const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
 const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 // Keep compatibility with the name already used in the project's Supabase dashboard.
 const adminPassword = Deno.env.get('ADMIN_PASSWORD') ?? Deno.env.get('DMIN_PASSWORD') ?? '';
+const metaCapiAccessToken = Deno.env.get('META_CAPI_ACCESS_TOKEN') ?? '';
+const metaCapiTestEventCode = Deno.env.get('META_CAPI_TEST_EVENT_CODE') ?? '';
+const metaGraphApiVersion = Deno.env.get('META_GRAPH_API_VERSION') ?? 'v26.0';
 const db = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
 const loginAttempts = new Map<string, { count: number; expires: number }>();
 const encoder = new TextEncoder();
@@ -56,6 +59,63 @@ async function hashToken(token: string) {
   const digest = await crypto.subtle.digest('SHA-256', encoder.encode(token));
   return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('');
 }
+async function sha256(value: string) {
+  const digest = await crypto.subtle.digest('SHA-256', encoder.encode(value));
+  return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('');
+}
+function normalizeName(value: string) {
+  return value.trim().toLowerCase().normalize('NFD').replace(/\p{M}/gu, '').replace(/[^\p{L}\p{N}]/gu, '');
+}
+function normalizeAlgerianPhone(value: string) {
+  const digits = value.replace(/\D/g, '');
+  return digits.startsWith('0') ? `213${digits.slice(1)}` : digits;
+}
+function validMetaCookie(value: unknown, prefix: string) {
+  return typeof value === 'string' && value.length <= 200 && value.startsWith(prefix) && /^[\w.:-]+$/.test(value) ? value : '';
+}
+async function sendMetaLead(request: Request, body: any, eventId: string, pixelId: string) {
+  if (!metaCapiAccessToken || !/^\d{6,20}$/.test(pixelId)) return;
+  const names = body.fullName.trim().split(/\s+/);
+  const userData: Record<string, unknown> = {
+    ph: [await sha256(normalizeAlgerianPhone(body.phone))],
+    client_user_agent: request.headers.get('user-agent') ?? '',
+  };
+  const clientIp = request.headers.get('cf-connecting-ip') ?? request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? '';
+  if (clientIp) userData.client_ip_address = clientIp;
+  if (names[0]) userData.fn = await sha256(normalizeName(names[0]));
+  if (names.length > 1) userData.ln = await sha256(normalizeName(names.slice(1).join(' ')));
+  const fbp = validMetaCookie(body.fbp, 'fb.1.');
+  const fbc = validMetaCookie(body.fbc, 'fb.1.');
+  if (fbp) userData.fbp = fbp;
+  if (fbc) userData.fbc = fbc;
+
+  const origin = request.headers.get('origin') ?? 'https://tawabil.africacold.fr';
+  const payload: Record<string, unknown> = {
+    data: [{
+      event_name: 'Lead',
+      event_time: Math.floor(Date.now() / 1000),
+      event_id: eventId,
+      action_source: 'website',
+      event_source_url: `${origin}/`,
+      user_data: userData,
+    }],
+  };
+  if (metaCapiTestEventCode) payload.test_event_code = metaCapiTestEventCode;
+  const endpoint = new URL(`https://graph.facebook.com/${metaGraphApiVersion}/${pixelId}/events`);
+  endpoint.searchParams.set('access_token', metaCapiAccessToken);
+  try {
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!response.ok) console.error('Meta CAPI Lead delivery failed:', response.status);
+  } catch {
+    // Order acceptance must not fail if Meta's tracking endpoint is unavailable.
+    console.error('Meta CAPI Lead delivery failed: network error');
+  }
+}
 async function authorized(request: Request) {
   const token = request.headers.get('authorization')?.replace(/^Bearer\s+/i, '') ?? '';
   if (!token || token.length < 32) return false;
@@ -82,7 +142,16 @@ Deno.serve(async (request: Request) => {
       return fail(request, 'تحقق من بيانات الطلب والكمية والموافقة على التواصل.', 400);
     }
     const { error } = await db.from('orders').insert({ full_name: body.fullName.trim(), phone: body.phone.trim(), wilaya: body.wilaya.trim(), address: body.address.trim(), quantity: body.quantity, notes: (body.notes ?? '').trim() });
-    return error ? fail(request, 'تعذر حفظ الطلب الآن. حاول مجددًا.', 503) : reply(request, { ok: true }, 201);
+    if (error) return fail(request, 'تعذر حفظ الطلب الآن. حاول مجددًا.', 503);
+    const eventId = typeof body.eventId === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(body.eventId) ? body.eventId : '';
+    // Legacy pages keep working; only opted-in updated clients use server tracking.
+    if (eventId && body.metaConsent === true) {
+      try {
+        const { data: settings } = await db.from('course_settings').select('pixel_id').eq('id', true).maybeSingle();
+        await sendMetaLead(request, body, eventId, settings?.pixel_id ?? '');
+      } catch { console.error('Meta CAPI tracking unavailable; order saved'); }
+    }
+    return reply(request, { ok: true, ...(eventId ? { eventId } : {}) }, 201);
   }
   if (path === 'login' && request.method === 'POST') {
     if (!adminPassword) return fail(request, 'لم يكتمل إعداد كلمة مرور الإدارة.', 503);
@@ -121,7 +190,7 @@ Deno.serve(async (request: Request) => {
     if (error) return fail(request, 'تعذر تحديث حالة الطلب.', 503);
     return data ? reply(request, { ok: true }) : fail(request, 'لم يتم العثور على هذا الطلب.', 404);
   }
-  if (path === 'order-delete' && request.method === 'POST') {
+    if (path === 'order-delete' && request.method === 'POST') {
     if (!await authorized(request)) return fail(request, 'انتهت الجلسة. سجّل الدخول مجددًا.', 401);
     const body = await json(request);
     if (!body || !Number.isSafeInteger(body.orderId) || body.orderId < 1) return fail(request, 'تحقق من رقم الطلب.', 400);
@@ -139,7 +208,7 @@ Deno.serve(async (request: Request) => {
     if (error) return fail(request, 'تعذر حفظ تعديلات الطلب.', 503);
     return data ? reply(request, { ok: true }) : fail(request, 'لم يتم العثور على هذا الطلب.', 404);
   }
-  if (path === 'settings' && request.method === 'POST') {
+if (path === 'settings' && request.method === 'POST') {
     if (!await authorized(request)) return fail(request, 'انتهت الجلسة. سجّل الدخول مجددًا.', 401);
     const body = await json(request);
     const pixelId = body?.pixelId ?? '';
