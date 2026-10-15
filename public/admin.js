@@ -3,8 +3,14 @@ const API = 'https://cawroeqwtuxfmaqxuypd.supabase.co/functions/v1/course-api';
 let orders = [];
 let activeStatus = 'all';
 let activeView = 'overview';
+let currentPage = 1;
 let token = sessionStorage.getItem('courseAdminToken') || '';
 const orderStatuses = [['new', 'جديدة'], ['confirmed', 'مؤكدة'], ['rejected', 'مرفوضة']];
+const messageTemplates = {
+  confirm: 'السلام عليكم {name}، نؤكد استلام طلبيتك رقم #{id} من بسكريا للتوابل. الكمية: {quantity}. سنتواصل معك لتأكيد التوصيل. شكرًا لثقتك بنا.',
+  delivery: 'السلام عليكم {name}، نرجو تأكيد عنوان التوصيل لطلبيتك رقم #{id}: {address}، ولاية {wilaya}. شكرًا لك.',
+  followup: 'السلام عليكم {name}، نتواصل معك بخصوص طلبيتك رقم #{id} من بسكريا للتوابل. هل ما زلت ترغب في تأكيدها؟'
+};
 
 async function api(path, options = {}) {
   const headers = { ...(options.headers || {}) };
@@ -120,35 +126,66 @@ function makeEditButton(order) {
 
 function makeOrderActions(order) {
   const actions = document.createElement('div'); actions.className = 'order-actions';
+  const phone = String(order.phone || '').replace(/[^\d+]/g, '');
+  const digits = phone.replace(/\D/g, '');
+  if (digits) {
+    const call = document.createElement('a'); call.className = 'contact-order call-order'; call.href = `tel:${phone}`; call.setAttribute('aria-label', `اتصال بالزبون صاحب الطلب ${order.id}`); call.title = 'اتصال'; call.textContent = '☎';
+    let international = digits;
+    if (international.startsWith('0')) international = `213${international.slice(1)}`;
+    else if (!international.startsWith('213') && international.length <= 10) international = `213${international}`;
+    const text = `السلام عليكم ${order.fullName || ''}، نؤكد استلام طلبيتك رقم #${order.id} من بسكريا للتوابل. الكمية: ${order.quantity || 1}.`;
+    const whatsapp = document.createElement('a'); whatsapp.className = 'contact-order whatsapp-order'; whatsapp.href = `https://wa.me/${international}?text=${encodeURIComponent(text)}`; whatsapp.target = '_blank'; whatsapp.rel = 'noopener noreferrer'; whatsapp.setAttribute('aria-label', `فتح واتساب للطلب ${order.id}`); whatsapp.title = 'واتساب'; whatsapp.textContent = '◉';
+    actions.append(whatsapp, call);
+  }
   actions.append(makeEditButton(order), makeDeleteButton(order));
   return actions;
 }
 
-function renderOrders() {
+function getVisibleOrders() {
   const query = $('search').value.trim().toLocaleLowerCase('ar');
-  const countByStatus = Object.fromEntries(orderStatuses.map(([status]) => [status, orders.filter(order => (order.status || 'new') === status).length]));
-  $('countNew').textContent = countByStatus.new; $('countConfirmed').textContent = countByStatus.confirmed; $('countRejected').textContent = countByStatus.rejected; $('countAll').textContent = orders.length;
-  renderOverview(countByStatus);
   const from = $('dateFrom').value, to = $('dateTo').value;
   const visible = orders.filter(order => {
-    const orderDate = new Date(order.createdAt).toISOString().slice(0, 10);
+    const parsedDate = new Date(order.createdAt);
+    const orderDate = Number.isNaN(parsedDate.valueOf()) ? '' : parsedDate.toISOString().slice(0, 10);
     return (activeStatus === 'all' || (order.status || 'new') === activeStatus)
       && (!from || orderDate >= from) && (!to || orderDate <= to)
+      && (!$('filterWilaya').value || order.wilaya === $('filterWilaya').value)
       && Object.values(order).some(value => String(value ?? '').toLocaleLowerCase('ar').includes(query));
   });
-  const sorted = [...visible].sort((a, b) => {
+  return visible.sort((a, b) => {
     if ($('sortOrders').value === 'oldest') return new Date(a.createdAt) - new Date(b.createdAt);
     if ($('sortOrders').value === 'quantity') return (Number(b.quantity) || 0) - (Number(a.quantity) || 0);
     return new Date(b.createdAt) - new Date(a.createdAt);
   });
-  $('count').textContent = `${visible.length.toLocaleString('ar-DZ')} من ${orders.length.toLocaleString('ar-DZ')} طلب`;
+}
+
+function renderWilayaOptions() {
+  const select = $('filterWilaya'), previous = select.value;
+  const wilayas = [...new Set(orders.map(order => String(order.wilaya || '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'ar'));
+  select.replaceChildren(new Option('كل الولايات', ''), ...wilayas.map(wilaya => new Option(wilaya, wilaya)));
+  select.value = wilayas.includes(previous) ? previous : '';
+}
+
+function renderOrders() {
+  const countByStatus = Object.fromEntries(orderStatuses.map(([status]) => [status, orders.filter(order => (order.status || 'new') === status).length]));
+  $('countNew').textContent = countByStatus.new; $('countConfirmed').textContent = countByStatus.confirmed; $('countRejected').textContent = countByStatus.rejected; $('countAll').textContent = orders.length;
+  renderOverview(countByStatus);
+  renderWilayaOptions();
+  const sorted = getVisibleOrders();
+  const pageSizeValue = $('pageSize').value;
+  const pageSize = pageSizeValue === 'all' ? Math.max(sorted.length, 1) : Number(pageSizeValue) || 25;
+  const pageCount = Math.max(1, Math.ceil(sorted.length / pageSize));
+  currentPage = Math.min(Math.max(currentPage, 1), pageCount);
+  const pageOrders = sorted.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const query = $('search').value.trim();
+  $('count').textContent = `${sorted.length.toLocaleString('ar-DZ')} من ${orders.length.toLocaleString('ar-DZ')} طلب`;
   $('clearSearch').hidden = !query;
   document.querySelectorAll('.status-filter').forEach(button => { const active = button.dataset.status === activeStatus; button.classList.toggle('is-active', active); button.setAttribute('aria-pressed', String(active)); });
   const rows = document.createDocumentFragment(), cards = document.createDocumentFragment();
-  if (!sorted.length) {
+  if (!pageOrders.length) {
     const row = document.createElement('tr'), cell = document.createElement('td'); cell.colSpan = 10; cell.className = 'empty-orders'; cell.textContent = orders.length ? 'لا توجد طلبات في هذا القسم تطابق البحث.' : 'لم يصل أي طلب بعد. ستظهر الطلبات الجديدة هنا.'; row.append(cell); rows.append(row);
     const empty = document.createElement('div'); empty.className = 'order-card empty-orders'; empty.textContent = cell.textContent; cards.append(empty);
-  } else for (const order of sorted) {
+  } else for (const order of pageOrders) {
     const row = document.createElement('tr');
     addCell(row, 'رقم', `#${order.id}`); addCell(row, 'الاسم الكامل', order.fullName); addCell(row, 'الهاتف', order.phone, 'ltr'); addCell(row, 'الولاية', order.wilaya); addCell(row, 'عنوان التوصيل', order.address); addCell(row, 'الكمية', String(order.quantity)); addCell(row, 'ملاحظة', order.notes); const statusCell = document.createElement('td'); statusCell.dataset.label = 'الحالة'; statusCell.append(makeStatusControl(order)); row.append(statusCell); addCell(row, 'وقت الطلب', dateLabel(order.createdAt)); const actionCell = document.createElement('td'); actionCell.dataset.label = 'إجراء'; actionCell.append(makeOrderActions(order)); row.append(actionCell); rows.append(row);
     const card = document.createElement('article'); card.className = 'order-card';
@@ -163,9 +200,13 @@ function renderOrders() {
     card.append(head, details, makeStatusControl(order), makeOrderActions(order)); cards.append(card);
   }
   $('rows').replaceChildren(rows); $('ordersMobile').replaceChildren(cards);
+  $('pageIndicator').textContent = `${currentPage.toLocaleString('ar-DZ')} / ${pageCount.toLocaleString('ar-DZ')}`;
+  $('previousPage').disabled = currentPage <= 1;
+  $('nextPage').disabled = currentPage >= pageCount;
+  $('ordersPagination').hidden = sorted.length <= pageSize;
   const updated = new Date().toLocaleTimeString('ar-DZ', { hour: '2-digit', minute: '2-digit' });
   $('lastUpdated').textContent = `آخر تحديث ${updated}`;
-  $('adminStatus').textContent = `يعرض ${visible.length.toLocaleString('ar-DZ')} طلب`;
+  $('adminStatus').textContent = `يعرض ${pageOrders.length.toLocaleString('ar-DZ')} من ${sorted.length.toLocaleString('ar-DZ')} طلب`;
 }
 
 function exportOrders() {
@@ -178,11 +219,12 @@ function exportOrders() {
     ['وقت الطلب', order => dateLabel(order.createdAt)],
   ];
   const csvCell = value => `"${String(value ?? '').replaceAll('"', '""')}"`;
-  const content = '\uFEFF' + [columns.map(([label]) => csvCell(label)).join(','), ...orders.map(order => columns.map(([, value]) => csvCell(value(order))).join(','))].join('\r\n');
+  const selected = getVisibleOrders();
+  const content = '\uFEFF' + [columns.map(([label]) => csvCell(label)).join(','), ...selected.map(order => columns.map(([, value]) => csvCell(value(order))).join(','))].join('\r\n');
   const url = URL.createObjectURL(new Blob([content], { type: 'text/csv;charset=utf-8' }));
-  const link = document.createElement('a'); link.href = url; link.download = 'طلبات-نكهة-بسكرة.csv'; link.click();
+  const link = document.createElement('a'); link.href = url; link.download = 'طلبيات-بسكريا-للتوابل.csv'; link.click();
   window.setTimeout(() => URL.revokeObjectURL(url), 1000);
-  $('adminStatus').textContent = `تم تجهيز ملف يتضمن ${orders.length.toLocaleString('ar-DZ')} طلب.`;
+  $('adminStatus').textContent = `تم تجهيز ملف يتضمن ${selected.length.toLocaleString('ar-DZ')} طلب حسب الفلاتر الحالية.`;
 }
 
 async function loadOrders() { orders = await api('orders'); renderOrders(); $('login').hidden = true; $('admin-login-nav').hidden = true; $('dashboard').hidden = false; setAdminView(activeView); }
@@ -223,18 +265,40 @@ async function loadSettings() {
 $('addMedia').addEventListener('click', () => addMediaEntry());
 $('search').addEventListener('input', renderOrders);
 $('sortOrders').addEventListener('change', renderOrders);
+$('filterWilaya').addEventListener('change', () => { currentPage = 1; renderOrders(); });
+$('pageSize').addEventListener('change', () => { currentPage = 1; renderOrders(); });
 $('dateFrom').addEventListener('change', renderOrders);
 $('dateTo').addEventListener('change', renderOrders);
-$('clearSearch').addEventListener('click', () => { $('search').value = ''; renderOrders(); $('search').focus(); });
-$('resetFilters').addEventListener('click', () => { $('search').value = ''; $('dateFrom').value = ''; $('dateTo').value = ''; $('sortOrders').value = 'newest'; activeStatus = 'all'; renderOrders(); });
+$('clearSearch').addEventListener('click', () => { $('search').value = ''; currentPage = 1; renderOrders(); $('search').focus(); });
+$('resetFilters').addEventListener('click', () => { $('search').value = ''; $('dateFrom').value = ''; $('dateTo').value = ''; $('sortOrders').value = 'newest'; $('filterWilaya').value = ''; $('pageSize').value = '25'; activeStatus = 'all'; currentPage = 1; renderOrders(); });
 $('exportOrders').addEventListener('click', exportOrders);
+$('previousPage').addEventListener('click', () => { currentPage -= 1; renderOrders(); });
+$('nextPage').addEventListener('click', () => { currentPage += 1; renderOrders(); });
+$('messageTemplates').addEventListener('click', () => { $('messageTemplateSelect').dispatchEvent(new Event('change')); $('messageDialog').showModal(); });
+$('messageTemplateSelect').addEventListener('change', () => { $('messageTemplateText').value = messageTemplates[$('messageTemplateSelect').value] || ''; $('messageCopyStatus').textContent = ''; });
+$('copyMessageTemplate').addEventListener('click', async () => {
+  try { await navigator.clipboard.writeText($('messageTemplateText').value); $('messageCopyStatus').textContent = 'نُسخت الرسالة.'; }
+  catch { $('messageTemplateText').select(); $('messageCopyStatus').textContent = 'حدّد النص وانسخه يدويًا.'; }
+});
+$('copyStoreLink').addEventListener('click', async () => {
+  try { await navigator.clipboard.writeText('https://tawabil.africacold.fr/'); $('copyStoreLink').textContent = 'تم النسخ ✓'; }
+  catch { $('copyStoreLink').textContent = 'انسخ من الرابط الظاهر'; }
+  window.setTimeout(() => { $('copyStoreLink').textContent = 'نسخ الرابط'; }, 2200);
+});
+$('settingsForm').addEventListener('click', event => {
+  const tab = event.target.closest('[data-settings-tab]');
+  if (!tab) return;
+  const name = tab.dataset.settingsTab;
+  document.querySelectorAll('[data-settings-tab]').forEach(button => { const active = button === tab; button.classList.toggle('is-active', active); button.setAttribute('aria-selected', String(active)); });
+  document.querySelectorAll('[data-settings-panel]').forEach(panel => { panel.hidden = panel.dataset.settingsPanel !== name; });
+});
 $('dashboard').addEventListener('click', event => {
   const nav = event.target.closest('[data-admin-view]');
   if (nav) setAdminView(nav.dataset.adminView);
   const jump = event.target.closest('[data-go-view]');
   if (jump) { setAdminView(jump.dataset.goView); if (jump.dataset.goView === 'orders') $('search').focus({ preventScroll: true }); }
 });
-$('statusFilters').addEventListener('click', event => { const button = event.target.closest('[data-status]'); if (!button) return; activeStatus = button.dataset.status; renderOrders(); });
+$('statusFilters').addEventListener('click', event => { const button = event.target.closest('[data-status]'); if (!button) return; activeStatus = button.dataset.status; currentPage = 1; renderOrders(); });
 $('refresh').addEventListener('click', () => loadOrders().catch(error => { $('adminStatus').textContent = error.message; }));
 $('cancelEditOrder').addEventListener('click', () => $('editOrderDialog').close());
 $('editOrderForm').addEventListener('submit', async event => {
@@ -268,6 +332,19 @@ $('settingsForm').addEventListener('submit', async event => {
   const form = event.currentTarget, button = form.querySelector('button[type="submit"]'); button.disabled = true; $('settingsStatus').textContent = '';
   try {
     const body = { title: form.elements.title.value.trim(), description: form.elements.description.value.trim(), price: form.elements.price.value.trim(), pixelId: form.elements.pixelId.value.trim(), media: readMediaEntries() };
+    if (!body.title || !body.description) {
+      $('settingsStatus').textContent = 'أدخل اسم الباك ووصفه قبل الحفظ.';
+      const missingTab = body.title ? 'content' : 'general';
+      document.querySelector(`[data-settings-tab="${missingTab}"]`).click();
+      form.elements[body.title ? 'description' : 'title'].focus();
+      return;
+    }
+    if (body.pixelId && !/^\d{6,20}$/.test(body.pixelId)) {
+      $('settingsStatus').textContent = 'أدخل معرّف Pixel الرقمي من 6 إلى 20 رقمًا.';
+      document.querySelector('[data-settings-tab="tracking"]').click();
+      form.elements.pixelId.focus();
+      return;
+    }
     await api('settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     $('settingsStatus').textContent = 'تم حفظ الإعدادات. سيُستخدم معرّف Meta Pixel في صفحة الباك بعد التحديث.';
   } catch (error) { $('settingsStatus').textContent = error.message; }
