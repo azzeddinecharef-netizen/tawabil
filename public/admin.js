@@ -25,7 +25,7 @@ function addCell(row, label, value, className = '') {
 function dateLabel(value) { const date = new Date(value); return Number.isNaN(date.valueOf()) ? '—' : date.toLocaleString('ar-DZ'); }
 
 function makeStatusControl(order) {
-  const label = document.createElement('label'); label.className = 'order-status-control'; label.textContent = 'حالة الطلب';
+  const control = document.createElement('div'); control.className = 'order-status-control';
   const select = document.createElement('select'); select.setAttribute('aria-label', `حالة الطلب رقم ${order.id}`);
   for (const [value, text] of orderStatuses) { const option = document.createElement('option'); option.value = value; option.textContent = text; select.append(option); }
   select.value = order.status || 'new';
@@ -38,7 +38,7 @@ function makeStatusControl(order) {
     } catch (error) { select.value = previous; $('adminStatus').textContent = error.message; }
     finally { select.disabled = false; }
   });
-  label.append(select); return label;
+  control.append(select); return control;
 }
 
 function renderOrders() {
