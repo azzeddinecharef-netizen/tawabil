@@ -93,3 +93,7 @@ body:has(.admin-main) .brand-mark{color:#b49b36}
 .admin-main .settings-status,.admin-main .empty-orders{color:#4c612f}
 @media(max-width:520px){.admin-main .login-3d{box-shadow:11px 12px 0 #c8cbd2,17px 22px 38px #73798538,inset 1px 1px 0 #fff}}
 @media(prefers-reduced-motion:reduce){.admin-main *{scroll-behavior:auto!important;transition:none!important}}
+
+body:has(.admin-main) .nav .button{background:linear-gradient(145deg,#f6f7f9,#d9dce3);border:1px solid #cdd1d9;color:#292d35;box-shadow:0 5px 0 #b8bdc7,0 10px 18px #656b772b,inset 0 1px 0 #fff}
+body:has(.admin-main) .nav .button:hover{background:linear-gradient(145deg,#fff,#dfe2e8);box-shadow:0 7px 0 #b8bdc7,0 12px 20px #656b772b,inset 0 1px 0 #fff}
+body:has(.admin-main) .brand-mark{background:linear-gradient(145deg,#f6eaa7,#e3c94c);box-shadow:4px 4px 9px #77705b38,-3px -3px 8px #fff}
