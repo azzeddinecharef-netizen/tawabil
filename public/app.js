@@ -16,6 +16,12 @@ function initializeMetaPixel(value) {
   window.fbq('track', 'PageView');
 }
 
+function readMetaCookie(name) {
+  const prefix = `${name}=`;
+  const value = document.cookie.split(';').map(part => part.trim()).find(part => part.startsWith(prefix));
+  if (!value) return '';
+  try { return decodeURIComponent(value.slice(prefix.length)); } catch { return ''; }
+}
 function driveId(value) {
   try {
     const url = new URL(value);
@@ -112,6 +118,7 @@ form.addEventListener('submit', async event => {
   if (!wilaya || !commune) { status.textContent = 'اختر الولاية والبلدية لإتمام الطلب.'; return; }
   const offer = selectedOffer();
   const offerTitle = offer.dataset.label;
+  const eventId = crypto.randomUUID();
   const order = {
     fullName: form.elements.name.value.trim(),
     phone,
@@ -119,7 +126,11 @@ form.addEventListener('submit', async event => {
     address: `${form.elements.address.value.trim()}، ${commune}`,
     quantity: offer.value === 'pack5' ? 5 : 1,
     notes: `العرض: ${offerTitle} | الوزن: ${offer.dataset.kg} كلغ | المجموع: ${offer.dataset.price} دج | التوصيل: ${offer.dataset.free === '1' ? 'مجاني' : 'يحدد عند الاتصال'}`,
-    consent: form.elements.consent.checked
+    consent: form.elements.consent.checked,
+    metaConsent: form.elements.consent.checked,
+    eventId,
+    fbp: readMetaCookie('_fbp'),
+    fbc: readMetaCookie('_fbc')
   };
   button.disabled = true; button.textContent = 'جارٍ إرسال الطلب…';
   try {
@@ -127,7 +138,7 @@ form.addEventListener('submit', async event => {
     const result = await response.json(); if (!response.ok) throw Error(result.error);
     form.hidden = true; $('elb-thanks-phone').textContent = phone; $('elb-thanks').hidden = false; $('elb-thanks').focus();
     // Fire only after the order has been accepted; never send form fields to Meta.
-    if (window.fbq) window.fbq('track', 'Lead');
+    if (window.fbq) window.fbq('track', 'Lead', {}, { eventID: result.eventId || eventId });
     const sticky = document.querySelector('.elb-sticky'); if (sticky) sticky.style.display = 'none';
   } catch (error) {
     status.textContent = error.message || 'تعذر إرسال الطلب. حاول مجددًا.';
