@@ -1,0 +1,2 @@
+[functions.course-api]
+verify_jwt = false
