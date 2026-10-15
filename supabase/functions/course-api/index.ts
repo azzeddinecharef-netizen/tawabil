@@ -7,7 +7,8 @@ const originAllowlist = new Set([
 ]);
 const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
 const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
-const adminPassword = Deno.env.get('ADMIN_PASSWORD') ?? '';
+// Keep compatibility with the name already used in the project's Supabase dashboard.
+const adminPassword = Deno.env.get('ADMIN_PASSWORD') ?? Deno.env.get('DMIN_PASSWORD') ?? '';
 const db = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
 const loginAttempts = new Map<string, { count: number; expires: number }>();
 const encoder = new TextEncoder();
@@ -90,7 +91,7 @@ Deno.serve(async (request: Request) => {
     if (!body || typeof body.password !== 'string' || body.password !== adminPassword) {
       if (!attempt || attempt.expires <= now) loginAttempts.set(ip, { count: 1, expires: now + 15 * 60 * 1000 });
       else loginAttempts.set(ip, { count: attempt.count + 1, expires: attempt.expires });
-      return fail(request, 'كلمة المرور غير صحيحة. تحقق من اسم السر ADMIN_PASSWORD.', 401);
+      return fail(request, 'كلمة المرور غير صحيحة. تحقق من السر ADMIN_PASSWORD أو DMIN_PASSWORD.', 401);
     }
     loginAttempts.delete(ip);
     const tokenBytes = crypto.getRandomValues(new Uint8Array(32));
