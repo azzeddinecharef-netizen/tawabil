@@ -97,3 +97,17 @@ body:has(.admin-main) .brand-mark{color:#b49b36}
 body:has(.admin-main) .nav .button{background:linear-gradient(145deg,#f6f7f9,#d9dce3);border:1px solid #cdd1d9;color:#292d35;box-shadow:0 5px 0 #b8bdc7,0 10px 18px #656b772b,inset 0 1px 0 #fff}
 body:has(.admin-main) .nav .button:hover{background:linear-gradient(145deg,#fff,#dfe2e8);box-shadow:0 7px 0 #b8bdc7,0 12px 20px #656b772b,inset 0 1px 0 #fff}
 body:has(.admin-main) .brand-mark{background:linear-gradient(145deg,#f6eaa7,#e3c94c);box-shadow:4px 4px 9px #77705b38,-3px -3px 8px #fff}
+
+/* Center the admin welcome and replace the decorative yellow disc with real spices. */
+.admin-main .login-3d::after{display:none}
+.login-spice-photo{position:relative;z-index:1;display:grid;justify-items:center;gap:7px;width:max-content;max-width:100%;margin:3px auto 17px}
+.login-spice-photo img{display:block;width:118px;height:118px;object-fit:cover;object-position:center;border:5px solid #f6f7f9;border-radius:50%;box-shadow:7px 9px 18px #73798548,-5px -5px 13px #fff}
+.login-spice-photo figcaption{max-width:245px;text-align:center;color:#737985;font-size:9px;line-height:1.5}
+.login-spice-photo figcaption a{color:#555d69;text-decoration:underline;text-underline-offset:2px}
+#login>.eyebrow,#login>h1,#login>p:not(#loginStatus){position:relative;text-align:center}
+#login>.eyebrow{margin:0 0 4px;letter-spacing:.05em}
+#login>h1{margin:4px 0 12px}
+#login>p:not(#loginStatus){max-width:35ch;margin:0 auto 20px}
+#login>label{text-align:right}
+#login #loginStatus{text-align:center}
+@media(max-width:520px){.login-spice-photo{margin:1px auto 15px}.login-spice-photo img{width:102px;height:102px;border-width:4px}.login-spice-photo figcaption{font-size:9px}#login>h1{margin-bottom:10px}}
