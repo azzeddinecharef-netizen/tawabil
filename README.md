@@ -1,25 +1,28 @@
-# مسار | صفحة الدورة والتسجيل
+# نكهة بسكرة
 
-موقع عربي متوافق مع الهاتف، يحتوي على صفحة تعريفية بالدورة ونموذج تسجيل ولوحة إدارة محمية.
+صفحة عربية للبيع وطلب باك من التوابل البسكرية، مصممة للهاتف أولًا. تتضمن نموذج طلب، ولوحة إدارة محمية لقراءة الطلبات وتعديل محتوى الباك وإضافة عدد مفتوح من الفيديوهات والمقاطع الصوتية.
 
-## الاستضافة
+## الروابط
 
-- الواجهة العامة ولوحة الإدارة: GitHub Pages من مجلد public/.
-- حفظ الطلبات وإعدادات الدورة وجلسات الإدارة: قاعدة بيانات Supabase.
-- المعالجة الخلفية: Supabase Edge Function باسم course-api.
+- صفحة المتجر: https://azzeddinecharef-netizen.github.io/tawabil/
+- إرسال طلب: https://azzeddinecharef-netizen.github.io/tawabil/#order
+- لوحة الإدارة والطلبات: https://azzeddinecharef-netizen.github.io/tawabil/admin.html
 
-الروابط بعد تفعيل النشر:
+## البنية والنشر
 
-- صفحة الدورة: https://azzeddinecharef-netizen.github.io/tawabil/
-- التسجيل: https://azzeddinecharef-netizen.github.io/tawabil/#register
-- لوحة الإدارة: https://azzeddinecharef-netizen.github.io/tawabil/admin.html
+- الواجهة العامة ولوحة الإدارة: GitHub Pages من مجلد `public/`.
+- حفظ الطلبات وإعدادات المتجر والجلسات: Supabase Database مع تفعيل RLS.
+- المعالجة الخلفية: Edge Function باسم `course-api`.
+- النشر: سير GitHub Actions في `.github/workflows/deploy-pages.yml`.
 
-## إعداد Supabase
+## إعداد قاعدة البيانات وSupabase
 
-1. شغّل supabase/migrations/20261015010000_course_schema.sql في SQL Editor.
-2. انشر supabase/functions/course-api/index.ts كـ Edge Function باسم course-api، واجعل Verify JWT متوقفًا للدالة حتى تصل طلبات الزوار العامة؛ الدالة تتحقق من جلسة الإدارة بنفسها.
-3. أضف سر الدالة باسم ADMIN_PASSWORD من صفحة Secrets في لوحة Supabase. اختر كلمة مرور إدارة قوية وفريدة، ولا تستخدم كلمة مرور قاعدة البيانات.
-4. القيمتان القياسيتان SUPABASE_URL وSUPABASE_SERVICE_ROLE_KEY متاحتان للدوال في بيئة Supabase. لا تضف مفتاح الخدمة أو كلمة مرور قاعدة البيانات إلى ملفات الواجهة أو GitHub.
-5. فعّل GitHub Pages باستخدام GitHub Actions. سير العمل في .github/workflows/publish.yml ينشر محتوى public/ تلقائيًا مع كل تحديث إلى main.
+نفّذ ملفات `supabase/migrations/` بالترتيب في SQL Editor. إذا كان المخطط الأول مستخدمًا من صفحة الدورة السابقة، نفّذ migration `20261015020000_spice_orders_and_media.sql` لإضافة جدول الطلبات وحقل الوسائط.
 
-تستخدم الدالة جلسات إدارية عشوائية قصيرة العمر وتخزن بصمتها فقط. لا يستطيع زوار الموقع قراءة جدول التسجيلات مباشرة؛ تتم القراءة عبر الدالة بعد التحقق من الجلسة.
+انشر `supabase/functions/course-api/index.ts` كدالة باسم `course-api`. أوقف خيار `Verify JWT with legacy secret`؛ الدالة تستخدم جلسات إدارة خاصة، وتتحقق من الطلبات قبل عرضها أو تعديل محتوى المتجر.
+
+أضف كلمة مرور إدارة قوية وفريدة في Supabase Edge Function Secrets بالاسم الدقيق `ADMIN_PASSWORD`. لا تضع كلمات المرور أو مفاتيح Supabase في هذا المستودع أو في ملفات الواجهة.
+
+## المقاطع
+
+من لوحة الإدارة أضف لكل مقطع نوعه وعنوانه ورابطه. تظهر فيديوهات YouTube وGoogle Drive داخل الصفحة بمشغل مدمج. تظهر روابط الصوت المباشرة بأشرطة تشغيل صوتية، وروابط Google Drive داخل مشغل مدمج. اضبط مشاركة ملفات Drive على "أي شخص لديه الرابط" حتى يتمكن الزائر من مشاهدتها أو الاستماع إليها.
