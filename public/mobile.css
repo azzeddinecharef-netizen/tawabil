@@ -1,0 +1,18 @@
+/* Phone inputs remain readable and avoid browser auto-zoom. */
+input:not([type=checkbox]),textarea{font-size:16px}
+.hero>div,.registration>div,.form-card,.table-wrap{min-width:0}
+.button{min-height:44px}
+@media(max-width:480px){
+ .wrap,.nav{padding-inline:16px}
+ .fields{grid-template-columns:1fr}
+ h1{font-size:34px;letter-spacing:-1px;overflow-wrap:anywhere}
+ .art{height:300px}
+ .form-card{padding:20px 16px}
+ .consent{font-size:13px}
+ .consent input{width:20px;height:20px;flex:0 0 20px}
+ .audio-card{padding:20px 16px;gap:14px}
+ .admin-head h1{font-size:32px}
+ .toolbar input{max-width:none;flex-basis:100%}
+ .admin-main details{padding:18px 14px}
+ .nav>a:not(.brand){font-size:12px}
+}
