@@ -68,7 +68,9 @@ Deno.serve(async (request: Request) => {
   if (!originAllowlist.has(request.headers.get('origin') ?? '')) return fail(request, 'مصدر الطلب غير مسموح.', 403);
   if (!supabaseUrl || !serviceKey) return fail(request, 'الخدمة غير مكتملة الإعداد.', 503);
 
-  const path = new URL(request.url).pathname.split('/').filter(Boolean).at(-1) ?? '';
+  const requestUrl = new URL(request.url);
+  // Supabase's gateway may strip subpaths after the function name. Pass routes as a query value.
+  const path = requestUrl.searchParams.get('route') ?? requestUrl.pathname.split('/').filter(Boolean).at(-1) ?? '';
   if (path === 'settings' && request.method === 'GET') {
     const { data, error } = await db.from('course_settings').select('title,description,price,media').eq('id', true).single();
     return error ? fail(request, 'تعذر تحميل محتوى الباك.', 503) : reply(request, data);
