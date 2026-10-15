@@ -57,3 +57,6 @@ html{scroll-padding-top:82px}body{overflow-x:hidden}input,textarea,button{font-s
 #order .order-form-3d>.button:hover{background:linear-gradient(145deg,#fff,#dfe2e8);box-shadow:0 8px 0 #b8bdc7,0 14px 22px #656b772c,inset 0 1px 0 #fff}
 #order .order-form-3d>.button:active{box-shadow:0 2px 0 #b8bdc7,0 6px 11px #656b772c}
 @media(max-width:520px){#order .order-form-3d{box-shadow:11px 12px 0 #c8cbd2,17px 22px 38px #73798538,inset 1px 1px 0 #fff}}
+
+/* Keep the fixed mobile order button in the same lamp-gray palette. */
+.mobile-order{background:linear-gradient(145deg,#f6f7f9,#d9dce3)!important;border:1px solid #cdd1d9;color:#292d35!important;box-shadow:0 6px 0 #b8bdc7,0 12px 20px #656b772c,inset 0 1px 0 #fff!important}
