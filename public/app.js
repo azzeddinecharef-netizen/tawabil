@@ -1,6 +1,21 @@
 const API = 'https://cawroeqwtuxfmaqxuypd.supabase.co/functions/v1/course-api';
 const $ = id => document.getElementById(id);
 
+function initializeMetaPixel(value) {
+  const metaPixelId = String(value || '').trim();
+  if (!/^\d{6,20}$/.test(metaPixelId) || window.fbq) return;
+  !function(f,b,e,v,n,t,s) {
+    if (f.fbq) return;
+    n = f.fbq = function() { n.callMethod ? n.callMethod.apply(n, arguments) : n.queue.push(arguments); };
+    if (!f._fbq) f._fbq = n;
+    n.push = n; n.loaded = true; n.version = '2.0'; n.queue = [];
+    t = b.createElement(e); t.async = true; t.src = v;
+    s = b.getElementsByTagName(e)[0]; s.parentNode.insertBefore(t, s);
+  }(window, document, 'script', 'https://connect.facebook.net/en_US/fbevents.js');
+  window.fbq('init', metaPixelId);
+  window.fbq('track', 'PageView');
+}
+
 function driveId(value) {
   try {
     const url = new URL(value);
@@ -48,6 +63,7 @@ function mediaCard(item, index) {
 fetch(`${API}?route=settings`).then(async response => {
   const result = await response.json(); if (!response.ok) throw Error(result.error); return result;
 }).then(settings => {
+  initializeMetaPixel(settings.pixelId);
   if (settings.title) document.title = `${settings.title} | البسكرية للتوابل`;
   if (settings.description) { const description = document.querySelector('.elb-lead'); if (description) description.textContent = settings.description; }
   const items = Array.isArray(settings.media) ? settings.media.filter(item => item && ['video', 'audio'].includes(item.kind) && item.url) : [];
@@ -110,6 +126,8 @@ form.addEventListener('submit', async event => {
     const response = await fetch(`${API}?route=orders`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(order) });
     const result = await response.json(); if (!response.ok) throw Error(result.error);
     form.hidden = true; $('elb-thanks-phone').textContent = phone; $('elb-thanks').hidden = false; $('elb-thanks').focus();
+    // Fire only after the order has been accepted; never send form fields to Meta.
+    if (window.fbq) window.fbq('track', 'Lead');
     const sticky = document.querySelector('.elb-sticky'); if (sticky) sticky.style.display = 'none';
   } catch (error) {
     status.textContent = error.message || 'تعذر إرسال الطلب. حاول مجددًا.';

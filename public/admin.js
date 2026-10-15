@@ -78,7 +78,7 @@ function readMediaEntries() {
 
 async function loadSettings() {
   const data = await api('settings');
-  const form = $('settingsForm'); form.elements.title.value = data.title || ''; form.elements.description.value = data.description || ''; form.elements.price.value = data.price || '';
+  const form = $('settingsForm'); form.elements.title.value = data.title || ''; form.elements.description.value = data.description || ''; form.elements.price.value = data.price || ''; form.elements.pixelId.value = data.pixelId || '';
   $('mediaEditor').replaceChildren();
   for (const item of Array.isArray(data.media) ? data.media : []) addMediaEntry(item);
 }
@@ -103,9 +103,9 @@ $('settingsForm').addEventListener('submit', async event => {
   event.preventDefault();
   const form = event.currentTarget, button = form.querySelector('button[type="submit"]'); button.disabled = true; $('settingsStatus').textContent = '';
   try {
-    const body = { title: form.elements.title.value.trim(), description: form.elements.description.value.trim(), price: form.elements.price.value.trim(), media: readMediaEntries() };
+    const body = { title: form.elements.title.value.trim(), description: form.elements.description.value.trim(), price: form.elements.price.value.trim(), pixelId: form.elements.pixelId.value.trim(), media: readMediaEntries() };
     await api('settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-    $('settingsStatus').textContent = 'تم حفظ المحتوى. ستظهر المقاطع للزوار في صفحة الباك.';
+    $('settingsStatus').textContent = 'تم حفظ الإعدادات. سيُستخدم معرّف Meta Pixel في صفحة الباك بعد التحديث.';
   } catch (error) { $('settingsStatus').textContent = error.message; }
   finally { button.disabled = false; }
 });

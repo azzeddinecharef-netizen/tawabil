@@ -2,6 +2,7 @@ import { createClient } from 'npm:@supabase/supabase-js@2';
 
 const originAllowlist = new Set([
   'https://azzeddinecharef-netizen.github.io',
+  'https://tawabil.africacold.fr',
   'http://localhost:4173',
   'http://127.0.0.1:4173',
 ]);
@@ -72,8 +73,8 @@ Deno.serve(async (request: Request) => {
   // Supabase's gateway may strip subpaths after the function name. Pass routes as a query value.
   const path = requestUrl.searchParams.get('route') ?? requestUrl.pathname.split('/').filter(Boolean).at(-1) ?? '';
   if (path === 'settings' && request.method === 'GET') {
-    const { data, error } = await db.from('course_settings').select('title,description,price,media').eq('id', true).single();
-    return error ? fail(request, 'تعذر تحميل محتوى الباك.', 503) : reply(request, data);
+    const { data, error } = await db.from('course_settings').select('title,description,price,media,pixel_id').eq('id', true).single();
+    return error ? fail(request, 'تعذر تحميل محتوى الباك.', 503) : reply(request, { title: data.title, description: data.description, price: data.price, media: data.media, pixelId: data.pixel_id });
   }
   if (path === 'orders' && request.method === 'POST') {
     const body = await json(request);
@@ -115,11 +116,12 @@ Deno.serve(async (request: Request) => {
   if (path === 'settings' && request.method === 'POST') {
     if (!await authorized(request)) return fail(request, 'انتهت الجلسة. سجّل الدخول مجددًا.', 401);
     const body = await json(request);
-    if (!body || !validText(body.title, 200) || !validText(body.description, 3000) || !validText(body.price ?? '', 100, true) || !Array.isArray(body.media) || !body.media.every(validMedia)) {
-      return fail(request, 'تحقق من عنوان الباك ووصفه والسعر وروابط المقاطع.', 400);
+    const pixelId = body?.pixelId ?? '';
+    if (!body || !validText(body.title, 200) || !validText(body.description, 3000) || !validText(body.price ?? '', 100, true) || !(pixelId === '' || typeof pixelId === 'string' && /^\d{6,20}$/.test(pixelId)) || !Array.isArray(body.media) || !body.media.every(validMedia)) {
+      return fail(request, 'تحقق من عنوان الباك ووصفه والسعر ومعرّف Meta Pixel وروابط المقاطع.', 400);
     }
     const media = body.media.map((item: any) => ({ kind: item.kind, title: item.title.trim(), url: item.url.trim() }));
-    const { error } = await db.from('course_settings').update({ title: body.title.trim(), description: body.description.trim(), price: (body.price ?? '').trim(), media, updated_at: new Date().toISOString() }).eq('id', true);
+    const { error } = await db.from('course_settings').update({ title: body.title.trim(), description: body.description.trim(), price: (body.price ?? '').trim(), media, pixel_id: pixelId, updated_at: new Date().toISOString() }).eq('id', true);
     return error ? fail(request, 'تعذر حفظ محتوى الباك.', 503) : reply(request, { ok: true });
   }
   return fail(request, 'المسار غير موجود.', 404);

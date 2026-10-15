@@ -91,6 +91,11 @@ body:has(.admin-main) .brand-mark{color:#b49b36}
 .admin-main summary{color:#292d35}
 .admin-main .remove-media{color:#4a4141}
 .admin-main .settings-status,.admin-main .empty-orders{color:#4c612f}
+.admin-main .meta-settings{margin:18px 0;padding:16px;border:1px solid #c9cdd5;border-radius:12px;background:#e8eaf0}
+.admin-main .meta-settings h2{margin:0 0 6px;font-size:18px}
+.admin-main .meta-settings label{display:block;margin-top:14px;font-size:13px;font-weight:700}
+.admin-main .meta-settings input{display:block;width:100%;min-height:46px;margin-top:7px;padding:11px;border:1px solid #d3d7df;border-radius:8px;background:#e5e7ec;color:#20232a;box-shadow:inset 5px 5px 10px #c4c8d0,inset -5px -5px 10px #fff}
+.admin-main .meta-settings input:focus{outline:0;border-color:#d5bd58;box-shadow:inset 5px 5px 10px #c4c8d0,inset -5px -5px 10px #fff,0 0 0 3px #f0d55d88}
 @media(max-width:520px){.admin-main .login-3d{box-shadow:11px 12px 0 #c8cbd2,17px 22px 38px #73798538,inset 1px 1px 0 #fff}}
 @media(prefers-reduced-motion:reduce){.admin-main *{scroll-behavior:auto!important;transition:none!important}}
 

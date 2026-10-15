@@ -24,6 +24,7 @@
           <label>عنوان الباك<input name="title" maxlength="200" required></label>
           <label>وصف الباك<textarea name="description" maxlength="3000" rows="4" required></textarea></label>
           <label>السعر <span class="optional">اختياري</span><input name="price" maxlength="100" placeholder="مثال: 2500 دج"></label>
+          <div class="meta-settings"><h2>قياس إعلانات Meta</h2><p class="help-text">أدخل معرّف Pixel الرقمي من مدير أحداث Meta. سيُسجّل الموقع زيارة الصفحة، وحدث Lead بعد نجاح إرسال الطلب فقط. اتركه فارغًا لإيقاف القياس.</p><label>معرّف Meta Pixel<input name="pixelId" inputmode="numeric" autocomplete="off" dir="ltr" pattern="[0-9]{6,20}" maxlength="20" placeholder="مثال: 123456789012345"></label></div>
           <div class="media-settings"><h2>الفيديوهات والرسائل الصوتية</h2><p class="help-text">أضف عنوانًا ورابطًا لكل مقطع. تقبل الفيديوهات روابط YouTube أو Google Drive، وتظهر داخل صفحة الباك كمشغّل مدمج. للصوت استخدم رابط ملف مباشر أو رابط مشاركة Google Drive مضبوطًا على إمكانية العرض.</p>
             <div id="mediaEditor" class="media-editor"></div>
             <button id="addMedia" class="add-media" type="button">＋ إضافة فيديو أو مقطع صوتي</button>
