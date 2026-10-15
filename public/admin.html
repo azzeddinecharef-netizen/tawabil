@@ -1,1 +1,37 @@
-<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; media-src 'self' https:; frame-src https://www.youtube-nocookie.com https://player.vimeo.com; connect-src 'self' https://cawroeqwtuxfmaqxuypd.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'"><title>إدارة طلبات التسجيل | مسار</title><link rel="stylesheet" href="style.css"><link rel="stylesheet" href="mobile.css"><script src="admin.js" defer></script></head><body><header class="nav"><a href="./" class="brand">مَسار<span>لوحة إدارة الدورة</span></a><a href="./">عرض صفحة الدورة ↗</a></header><main class="wrap admin-main"><form id="login" class="form-card login"><p class="eyebrow">مساحة الإدارة</p><h1>مرحبًا بك.</h1><p>أدخل كلمة المرور للاطلاع على طلبات التسجيل.</p><label>كلمة المرور<input name="password" type="password" autocomplete="current-password" required></label><button class="button full-button">دخول لوحة الإدارة ←</button><p id="loginStatus" role="status" class="error"></p></form><section id="dashboard" hidden><div class="admin-head"><div><p class="eyebrow">لوحة الإدارة</p><h1>طلبات التسجيل</h1><span id="count" class="badge"></span></div><button id="logout" class="button small">تسجيل الخروج</button></div><div class="toolbar"><input id="search" type="search" placeholder="ابحث بالاسم، الهاتف، الولاية أو المجال…" aria-label="البحث في الطلبات"><button id="refresh" class="button small">تحديث الطلبات ↻</button></div><p id="adminStatus" role="status"></p><div class="table-wrap"><table><thead><tr><th>#</th><th>الاسم</th><th>اللقب</th><th>تاريخ الميلاد</th><th>رقم الهاتف</th><th>البريد الإلكتروني</th><th>الولاية</th><th>المهنة / المجال</th><th>تاريخ التسجيل</th></tr></thead><tbody id="rows"></tbody></table></div><details><summary>تعديل محتوى الدورة والفيديو والمقاطع الصوتية</summary><form id="settingsForm"><div class="fields"><label class="full">عنوان الدورة<input name="title" maxlength="200" required></label><label class="full">وصف الدورة<textarea name="description" maxlength="3000" required></textarea></label><label class="full">رابط الفيديو (YouTube أو Vimeo أو ملف فيديو مباشر)<input type="url" name="video" dir="ltr" placeholder="https://…"></label><label class="full">رابط المقطع الصوتي الأول (ملف صوتي مباشر)<input type="url" name="audio1" dir="ltr" placeholder="https://…/welcome.mp3"></label><label class="full">رابط المقطع الصوتي الثاني (ملف صوتي مباشر)<input type="url" name="audio2" dir="ltr" placeholder="https://…/intro.mp3"></label></div><button class="button">حفظ محتوى الصفحة</button><p id="settingsStatus" role="status"></p></form></details></section></main></body></html>
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f7f2e8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; media-src 'self' https:; frame-src https://www.youtube-nocookie.com https://drive.google.com; connect-src 'self' https://cawroeqwtuxfmaqxuypd.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <title>طلبات باك التوابل | نكهة بسكرة</title>
+  <link rel="stylesheet" href="style.css"><link rel="stylesheet" href="mobile.css">
+  <script src="admin.js" defer></script>
+</head>
+<body>
+  <header class="nav wrap"><a href="./" class="brand"><span class="brand-mark" aria-hidden="true">✳</span><span>نكهة بسكرة<small>لوحة إدارة الباك</small></span></a><a class="button small" href="./">صفحة الزبائن ↗</a></header>
+  <main class="wrap admin-main">
+    <form id="login" class="form-card login"><p class="eyebrow">مساحة الإدارة</p><h1>أهلًا بك.</h1><p>أدخل كلمة مرور الإدارة لمشاهدة الطلبات وتعديل محتوى صفحة الباك.</p><label>كلمة المرور<input name="password" type="password" autocomplete="current-password" required></label><button class="button full-button" type="submit">دخول لوحة الإدارة <span aria-hidden="true">↙</span></button><p id="loginStatus" role="status" class="error"></p></form>
+    <section id="dashboard" hidden>
+      <div class="admin-head"><div><p class="eyebrow">لوحة الإدارة</p><h1>طلبات باك التوابل</h1><span id="count" class="badge"></span></div><button id="logout" class="button small" type="button">تسجيل الخروج</button></div>
+      <div class="toolbar"><input id="search" type="search" placeholder="ابحث بالاسم أو الهاتف أو الولاية…" aria-label="البحث في الطلبات"><button id="refresh" class="button small" type="button">تحديث الطلبات ↻</button></div>
+      <p id="adminStatus" role="status"></p>
+      <div class="table-wrap"><table><thead><tr><th>رقم</th><th>الاسم الكامل</th><th>رقم الهاتف</th><th>الولاية</th><th>عنوان التوصيل</th><th>الكمية</th><th>ملاحظات</th><th>وقت الطلب</th></tr></thead><tbody id="rows"></tbody></table></div>
+      <div id="ordersMobile" class="orders-mobile" aria-live="polite"></div>
+      <details class="settings-details"><summary>إعدادات باك التوابل والمقاطع</summary>
+        <form id="settingsForm">
+          <label>عنوان الباك<input name="title" maxlength="200" required></label>
+          <label>وصف الباك<textarea name="description" maxlength="3000" rows="4" required></textarea></label>
+          <label>السعر <span class="optional">اختياري</span><input name="price" maxlength="100" placeholder="مثال: 2500 دج"></label>
+          <div class="media-settings"><h2>الفيديوهات والرسائل الصوتية</h2><p class="help-text">أضف عنوانًا ورابطًا لكل مقطع. تقبل الفيديوهات روابط YouTube أو Google Drive، وتظهر داخل صفحة الباك كمشغّل مدمج. للصوت استخدم رابط ملف مباشر أو رابط مشاركة Google Drive مضبوطًا على إمكانية العرض.</p>
+            <div id="mediaEditor" class="media-editor"></div>
+            <button id="addMedia" class="add-media" type="button">＋ إضافة فيديو أو مقطع صوتي</button>
+          </div>
+          <button class="button" type="submit">حفظ محتوى الصفحة</button><p id="settingsStatus" class="settings-status" role="status" aria-live="polite"></p>
+        </form>
+      </details>
+    </section>
+  </main>
+</body>
+</html>
