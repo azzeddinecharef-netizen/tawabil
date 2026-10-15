@@ -129,6 +129,16 @@ Deno.serve(async (request: Request) => {
     if (error) return fail(request, 'تعذر حذف الطلب.', 503);
     return data ? reply(request, { ok: true }) : fail(request, 'لم يتم العثور على هذا الطلب.', 404);
   }
+  if (path === 'order-update' && request.method === 'POST') {
+    if (!await authorized(request)) return fail(request, 'انتهت الجلسة. سجّل الدخول مجددًا.', 401);
+    const body = await json(request);
+    if (!body || !Number.isSafeInteger(body.orderId) || body.orderId < 1 || !validText(body.fullName, 200) || !validText(body.phone, 25) || body.phone.replace(/\D/g, '').length < 8 || !validText(body.wilaya, 100) || !validText(body.address, 300) || !Number.isInteger(body.quantity) || body.quantity < 1 || body.quantity > 99 || !validText(body.notes ?? '', 1000, true) || !['new', 'confirmed', 'rejected'].includes(body.status)) {
+      return fail(request, 'تحقق من بيانات الطلب والكمية والحالة.', 400);
+    }
+    const { data, error } = await db.from('orders').update({ full_name: body.fullName.trim(), phone: body.phone.trim(), wilaya: body.wilaya.trim(), address: body.address.trim(), quantity: body.quantity, notes: (body.notes ?? '').trim(), status: body.status }).eq('id', body.orderId).select('id').maybeSingle();
+    if (error) return fail(request, 'تعذر حفظ تعديلات الطلب.', 503);
+    return data ? reply(request, { ok: true }) : fail(request, 'لم يتم العثور على هذا الطلب.', 404);
+  }
   if (path === 'settings' && request.method === 'POST') {
     if (!await authorized(request)) return fail(request, 'انتهت الجلسة. سجّل الدخول مجددًا.', 401);
     const body = await json(request);

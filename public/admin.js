@@ -54,6 +54,30 @@ function makeDeleteButton(order) {
   return button;
 }
 
+function makeEditButton(order) {
+  const button = document.createElement('button'); button.type = 'button'; button.className = 'edit-order'; button.textContent = 'تعديل'; button.setAttribute('aria-label', `تعديل بيانات الطلب رقم ${order.id}`);
+  button.addEventListener('click', () => {
+    const form = $('editOrderForm');
+    form.elements.orderId.value = order.id;
+    form.elements.fullName.value = order.fullName || '';
+    form.elements.phone.value = order.phone || '';
+    form.elements.wilaya.value = order.wilaya || '';
+    form.elements.address.value = order.address || '';
+    form.elements.quantity.value = order.quantity || 1;
+    form.elements.notes.value = order.notes || '';
+    form.elements.status.value = order.status || 'new';
+    $('editOrderNumber').textContent = `الطلب #${order.id}`;
+    $('editOrderDialog').showModal();
+  });
+  return button;
+}
+
+function makeOrderActions(order) {
+  const actions = document.createElement('div'); actions.className = 'order-actions';
+  actions.append(makeEditButton(order), makeDeleteButton(order));
+  return actions;
+}
+
 function renderOrders() {
   const query = $('search').value.trim().toLocaleLowerCase('ar');
   const countByStatus = Object.fromEntries(orderStatuses.map(([status]) => [status, orders.filter(order => (order.status || 'new') === status).length]));
@@ -67,7 +91,7 @@ function renderOrders() {
     const empty = document.createElement('div'); empty.className = 'order-card empty-orders'; empty.textContent = cell.textContent; cards.append(empty);
   } else for (const order of visible) {
     const row = document.createElement('tr');
-    addCell(row, 'رقم', `#${order.id}`); addCell(row, 'الاسم الكامل', order.fullName); addCell(row, 'الهاتف', order.phone, 'ltr'); addCell(row, 'الولاية', order.wilaya); addCell(row, 'عنوان التوصيل', order.address); addCell(row, 'الكمية', String(order.quantity)); addCell(row, 'ملاحظة', order.notes); const statusCell = document.createElement('td'); statusCell.dataset.label = 'الحالة'; statusCell.append(makeStatusControl(order)); row.append(statusCell); addCell(row, 'وقت الطلب', dateLabel(order.createdAt)); const actionCell = document.createElement('td'); actionCell.dataset.label = 'إجراء'; actionCell.append(makeDeleteButton(order)); row.append(actionCell); rows.append(row);
+    addCell(row, 'رقم', `#${order.id}`); addCell(row, 'الاسم الكامل', order.fullName); addCell(row, 'الهاتف', order.phone, 'ltr'); addCell(row, 'الولاية', order.wilaya); addCell(row, 'عنوان التوصيل', order.address); addCell(row, 'الكمية', String(order.quantity)); addCell(row, 'ملاحظة', order.notes); const statusCell = document.createElement('td'); statusCell.dataset.label = 'الحالة'; statusCell.append(makeStatusControl(order)); row.append(statusCell); addCell(row, 'وقت الطلب', dateLabel(order.createdAt)); const actionCell = document.createElement('td'); actionCell.dataset.label = 'إجراء'; actionCell.append(makeOrderActions(order)); row.append(actionCell); rows.append(row);
     const card = document.createElement('article'); card.className = 'order-card';
     const head = document.createElement('div'); head.className = 'order-card-head';
     const name = document.createElement('strong'); name.textContent = order.fullName || 'طلب جديد';
@@ -77,7 +101,7 @@ function renderOrders() {
       const item = document.createElement('div'); if (className) item.className = className;
       const term = document.createElement('dt'); term.textContent = label; const description = document.createElement('dd'); description.textContent = value || '—'; if (className === 'ltr') description.dir = 'ltr'; item.append(term, description); details.append(item);
     }
-    card.append(head, details, makeStatusControl(order), makeDeleteButton(order)); cards.append(card);
+    card.append(head, details, makeStatusControl(order), makeOrderActions(order)); cards.append(card);
   }
   $('rows').replaceChildren(rows); $('ordersMobile').replaceChildren(cards);
   $('adminStatus').textContent = `آخر تحديث: ${new Date().toLocaleTimeString('ar-DZ')}`;
@@ -122,6 +146,20 @@ $('addMedia').addEventListener('click', () => addMediaEntry());
 $('search').addEventListener('input', renderOrders);
 $('statusFilters').addEventListener('click', event => { const button = event.target.closest('[data-status]'); if (!button) return; activeStatus = button.dataset.status; renderOrders(); });
 $('refresh').addEventListener('click', () => loadOrders().catch(error => { $('adminStatus').textContent = error.message; }));
+$('cancelEditOrder').addEventListener('click', () => $('editOrderDialog').close());
+$('editOrderForm').addEventListener('submit', async event => {
+  event.preventDefault();
+  const form = event.currentTarget, button = form.querySelector('button[type="submit"]');
+  const body = { orderId: Number(form.elements.orderId.value), fullName: form.elements.fullName.value.trim(), phone: form.elements.phone.value.trim(), wilaya: form.elements.wilaya.value.trim(), address: form.elements.address.value.trim(), quantity: Number(form.elements.quantity.value), notes: form.elements.notes.value.trim(), status: form.elements.status.value };
+  button.disabled = true;
+  try {
+    await api('order-update', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const order = orders.find(item => item.id === body.orderId);
+    if (order) Object.assign(order, { fullName: body.fullName, phone: body.phone, wilaya: body.wilaya, address: body.address, quantity: body.quantity, notes: body.notes, status: body.status });
+    $('editOrderDialog').close(); renderOrders(); $('adminStatus').textContent = `تم حفظ تعديلات الطلب #${body.orderId}.`;
+  } catch (error) { $('adminStatus').textContent = error.message; }
+  finally { button.disabled = false; }
+});
 $('login').addEventListener('submit', async event => {
   event.preventDefault();
   const form = event.currentTarget, button = form.querySelector('button[type="submit"]'); button.disabled = true; $('loginStatus').textContent = '';

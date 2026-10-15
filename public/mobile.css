@@ -105,6 +105,22 @@ body:has(.admin-main) .brand-mark{color:#b49b36}
 .admin-main .order-status-control select:disabled{opacity:.65}
 .admin-main .delete-order{min-height:38px;padding:7px 11px;border:1px solid #c98775;border-radius:8px;background:linear-gradient(145deg,#fff2ec,#efd3c8);color:#82331f;box-shadow:0 3px 0 #d2aaa0,0 6px 12px #656b771c;cursor:pointer;font-size:12px;font-weight:700;white-space:nowrap}
 .admin-main .delete-order:disabled{opacity:.6;cursor:wait}
+.admin-main .edit-order{min-height:38px;padding:7px 11px;border:1px solid #b9bdc7;border-radius:8px;background:linear-gradient(145deg,#f7f8fa,#dfe2e8);color:#343943;box-shadow:0 3px 0 #b8bdc7,0 6px 12px #656b771c;cursor:pointer;font-size:12px;font-weight:700;white-space:nowrap}
+.admin-main .order-actions{display:flex;flex-wrap:wrap;gap:7px}
+.admin-main .order-edit-dialog{width:min(720px,calc(100% - 24px));max-height:min(88vh,900px);padding:0;border:1px solid #cdd1d9;border-radius:18px;background:linear-gradient(145deg,#f8f9fb,#e5e7ec);color:#292d35;box-shadow:0 24px 70px #20232a55}
+.admin-main .order-edit-dialog::backdrop{background:#20232a88;backdrop-filter:blur(3px)}
+.admin-main .order-edit-form{padding:clamp(18px,4vw,30px)}
+.admin-main .order-edit-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}
+.admin-main .order-edit-heading h2{margin:0;font-size:clamp(20px,4vw,27px)}
+.admin-main .order-edit-heading p{margin:4px 0 0;color:#737985;font-size:13px}
+.admin-main .order-edit-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
+.admin-main .order-edit-fields label{display:block;min-width:0;font-size:13px;font-weight:700}
+.admin-main .order-edit-fields input,.admin-main .order-edit-fields select,.admin-main .order-edit-fields textarea{display:block;width:100%;min-height:46px;margin-top:6px;padding:10px 12px;border:1px solid #cdd1d9;border-radius:9px;background:#f9fafc;color:#292d35;font:inherit;box-shadow:inset 2px 2px 5px #c4c8d055,inset -2px -2px 5px #fff}
+.admin-main .order-edit-fields textarea{resize:vertical}
+.admin-main .order-edit-fields .order-edit-notes{grid-column:1/-1}
+.admin-main .order-edit-actions{display:flex;justify-content:flex-start;margin-top:18px}
+.admin-main .order-edit-dialog[open]{animation:order-edit-in .18s ease-out}
+@keyframes order-edit-in{from{opacity:0;transform:translateY(8px) scale(.99)}to{opacity:1;transform:translateY(0) scale(1)}}
 @media(max-width:520px){.admin-main .login-3d{box-shadow:11px 12px 0 #c8cbd2,17px 22px 38px #73798538,inset 1px 1px 0 #fff}}
 @media(prefers-reduced-motion:reduce){.admin-main *{scroll-behavior:auto!important;transition:none!important}}
 
@@ -125,4 +141,4 @@ body:has(.admin-main) .brand-mark{background:linear-gradient(145deg,#f6eaa7,#e3c
 #login>label{text-align:right}
 #login #loginStatus{text-align:center}
 @media(max-width:520px){.login-spice-photo{margin:1px auto 15px}.login-spice-photo img{width:102px;height:102px;border-width:4px}.login-spice-photo figcaption{font-size:9px}#login>h1{margin-bottom:10px}}
-@media(max-width:760px){.admin-main .status-filters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.admin-main .status-filter{width:100%;padding:8px 9px;font-size:12px}.admin-main .order-status-control{margin-top:14px;min-width:0}.admin-main .order-status-control select{min-height:44px}.admin-main .delete-order{width:100%;min-height:44px;margin-top:9px}}
+@media(max-width:760px){.admin-main .status-filters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.admin-main .status-filter{width:100%;padding:8px 9px;font-size:12px}.admin-main .order-status-control{margin-top:14px;min-width:0}.admin-main .order-status-control select{min-height:44px}.admin-main .delete-order{width:100%;min-height:44px;margin-top:9px}.admin-main .order-actions{display:grid;grid-template-columns:1fr 1fr;width:100%;margin-top:9px}.admin-main .order-actions button{min-height:44px;margin-top:0}.admin-main .order-edit-fields{grid-template-columns:1fr}.admin-main .order-edit-fields .order-edit-notes{grid-column:auto}.admin-main .order-edit-dialog{max-height:84vh}}
