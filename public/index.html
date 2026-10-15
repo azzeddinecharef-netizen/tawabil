@@ -92,9 +92,10 @@ html{scroll-behavior:smooth}body{margin:0;background:#fff}
 
 /* INGREDIENTS */
 .elb-ing{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:24px}
-.elb-chip{background:#fff;border:1px solid var(--line);border-radius:18px;padding:18px 12px;text-align:center}
-.elb-dot{width:58px;height:58px;border-radius:50%;margin:0 auto 10px;box-shadow:inset 0 -6px 10px rgba(0,0,0,.15)}
-.elb-chip b{display:block;font-size:17px}.elb-chip span{font-size:13px;color:var(--muted)}
+.elb-chip{overflow:hidden;background:#fff;border:1px solid var(--line);border-radius:18px;text-align:center;box-shadow:0 8px 22px rgba(60,35,15,.07);transition:box-shadow .25s ease,transform .25s ease}
+.elb-chip img{display:block;width:100%;aspect-ratio:1/1;object-fit:cover;transition:transform .45s ease}
+.elb-chip:hover{transform:translateY(-3px);box-shadow:0 14px 28px rgba(60,35,15,.14)}.elb-chip:hover img{transform:scale(1.035)}
+.elb-chip b{display:block;padding:13px 10px 16px;font-size:18px;font-weight:900}
 .elb-claims{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px}
 .elb-claim{display:flex;align-items:center;gap:12px;background:var(--sand);border-radius:16px;padding:14px;font-weight:800}
 .elb-claim svg{width:38px;height:38px;flex:none;padding:7px;border-radius:50%;background:var(--coal);color:var(--gold)}
@@ -275,10 +276,10 @@ html{scroll-behavior:smooth}body{margin:0;background:#fff}
       <span class="elb-kick">مكتوبة على الكيس</span>
       <h2 id="elb-ing-t">تركيبة كيس 2 كلغ</h2>
       <div class="elb-ing">
-        <div class="elb-chip"><div class="elb-dot" style="background:#e3a21a"></div><b>كركم</b><span>Curcuma</span></div>
-        <div class="elb-chip"><div class="elb-dot" style="background:#c0331f"></div><b>بابريكا</b><span>Paprika</span></div>
-        <div class="elb-chip"><div class="elb-dot" style="background:#efe3c8"></div><b>ثوم</b><span>Ail</span></div>
-        <div class="elb-chip"><div class="elb-dot" style="background:#d8c7a6"></div><b>توابل بيضاء</b><span>Condiment blanc</span></div>
+        <div class="elb-chip"><img src="assets/biskria/ingredient-turmeric.jpg" alt="كركم مطحون وجذوره الطازجة" width="1254" height="1254" loading="lazy" decoding="async"><b>كركم</b></div>
+        <div class="elb-chip"><img src="assets/biskria/ingredient-paprika.jpg" alt="بابريكا حمراء مع الفلفل الطازج" width="1254" height="1254" loading="lazy" decoding="async"><b>بابريكا</b></div>
+        <div class="elb-chip"><img src="assets/biskria/ingredient-garlic.jpg" alt="فصوص ورؤوس ثوم طازجة" width="1254" height="1254" loading="lazy" decoding="async"><b>ثوم</b></div>
+        <div class="elb-chip"><img src="assets/biskria/ingredient-white-spices.jpg" alt="مزيج توابل بيضاء بالفلفل والكزبرة" width="1254" height="1254" loading="lazy" decoding="async"><b>توابل بيضاء</b></div>
       </div>
       <div class="elb-claims">
         <div class="elb-claim"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 19c0-9 6-14 15-14 0 9-5 15-14 15"/><path d="M5 19 14 10"/></svg>طبيعية 100%</div>
