@@ -96,6 +96,13 @@ body:has(.admin-main) .brand-mark{color:#b49b36}
 .admin-main .meta-settings label{display:block;margin-top:14px;font-size:13px;font-weight:700}
 .admin-main .meta-settings input{display:block;width:100%;min-height:46px;margin-top:7px;padding:11px;border:1px solid #d3d7df;border-radius:8px;background:#e5e7ec;color:#20232a;box-shadow:inset 5px 5px 10px #c4c8d0,inset -5px -5px 10px #fff}
 .admin-main .meta-settings input:focus{outline:0;border-color:#d5bd58;box-shadow:inset 5px 5px 10px #c4c8d0,inset -5px -5px 10px #fff,0 0 0 3px #f0d55d88}
+.admin-main .status-filters{display:flex;flex-wrap:wrap;gap:9px;margin:17px 0}
+.admin-main .status-filter{display:inline-flex;align-items:center;justify-content:center;gap:9px;min-height:42px;padding:8px 14px;border:1px solid #cdd1d9;border-radius:12px;background:linear-gradient(145deg,#f6f7f9,#d9dce3);color:#343943;box-shadow:0 4px 0 #b8bdc7,0 8px 14px #656b771c,inset 0 1px 0 #fff;cursor:pointer;font-weight:700}
+.admin-main .status-filter span{min-width:24px;padding:2px 6px;border-radius:20px;background:#d1d4dc;font-size:11px;text-align:center}
+.admin-main .status-filter.is-active{background:linear-gradient(145deg,#fff9d9,#edcf55);box-shadow:0 4px 0 #c9ae44,0 8px 14px #656b771c,inset 0 1px 0 #fff;color:#343125}
+.admin-main .order-status-control{display:grid;gap:5px;min-width:112px;color:#555d69;font-size:11px;font-weight:700}
+.admin-main .order-status-control select{width:100%;min-height:38px;padding:6px 9px;border:1px solid #cdd1d9;border-radius:8px;background:linear-gradient(145deg,#f6f7f9,#d9dce3);color:#292d35;box-shadow:inset 2px 2px 5px #c4c8d055,inset -2px -2px 5px #fff;}
+.admin-main .order-status-control select:disabled{opacity:.65}
 @media(max-width:520px){.admin-main .login-3d{box-shadow:11px 12px 0 #c8cbd2,17px 22px 38px #73798538,inset 1px 1px 0 #fff}}
 @media(prefers-reduced-motion:reduce){.admin-main *{scroll-behavior:auto!important;transition:none!important}}
 
@@ -116,3 +123,4 @@ body:has(.admin-main) .brand-mark{background:linear-gradient(145deg,#f6eaa7,#e3c
 #login>label{text-align:right}
 #login #loginStatus{text-align:center}
 @media(max-width:520px){.login-spice-photo{margin:1px auto 15px}.login-spice-photo img{width:102px;height:102px;border-width:4px}.login-spice-photo figcaption{font-size:9px}#login>h1{margin-bottom:10px}}
+@media(max-width:760px){.admin-main .status-filters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.admin-main .status-filter{width:100%;padding:8px 9px;font-size:12px}.admin-main .order-status-control{margin-top:14px;min-width:0}.admin-main .order-status-control select{min-height:44px}}

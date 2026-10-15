@@ -16,8 +16,14 @@
     <section id="dashboard" hidden>
       <div class="admin-head"><div><p class="eyebrow">لوحة الإدارة</p><h1>طلبات باك التوابل</h1><span id="count" class="badge"></span></div><button id="logout" class="button small" type="button">تسجيل الخروج</button></div>
       <div class="toolbar"><input id="search" type="search" placeholder="ابحث بالاسم أو الهاتف أو الولاية…" aria-label="البحث في الطلبات"><button id="refresh" class="button small" type="button">تحديث الطلبات ↻</button></div>
+      <div id="statusFilters" class="status-filters" role="group" aria-label="تصفية الطلبات حسب الحالة">
+        <button class="status-filter is-active" type="button" data-status="new" aria-pressed="true">جديدة <span id="countNew">0</span></button>
+        <button class="status-filter" type="button" data-status="confirmed" aria-pressed="false">مؤكدة <span id="countConfirmed">0</span></button>
+        <button class="status-filter" type="button" data-status="rejected" aria-pressed="false">مرفوضة <span id="countRejected">0</span></button>
+        <button class="status-filter" type="button" data-status="all" aria-pressed="false">كل الطلبات <span id="countAll">0</span></button>
+      </div>
       <p id="adminStatus" role="status"></p>
-      <div class="table-wrap"><table><thead><tr><th>رقم</th><th>الاسم الكامل</th><th>رقم الهاتف</th><th>الولاية</th><th>عنوان التوصيل</th><th>الكمية</th><th>ملاحظات</th><th>وقت الطلب</th></tr></thead><tbody id="rows"></tbody></table></div>
+      <div class="table-wrap"><table><thead><tr><th>رقم</th><th>الاسم الكامل</th><th>رقم الهاتف</th><th>الولاية</th><th>عنوان التوصيل</th><th>الكمية</th><th>ملاحظات</th><th>الحالة</th><th>وقت الطلب</th></tr></thead><tbody id="rows"></tbody></table></div>
       <div id="ordersMobile" class="orders-mobile" aria-live="polite"></div>
       <details class="settings-details"><summary>إعدادات باك التوابل والمقاطع</summary>
         <form id="settingsForm">

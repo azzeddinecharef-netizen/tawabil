@@ -109,9 +109,17 @@ Deno.serve(async (request: Request) => {
   }
   if (path === 'orders' && request.method === 'GET') {
     if (!await authorized(request)) return fail(request, 'انتهت الجلسة. سجّل الدخول مجددًا.', 401);
-    const { data, error } = await db.from('orders').select('id,full_name,phone,wilaya,address,quantity,notes,created_at').order('created_at', { ascending: false }).limit(1000);
+    const { data, error } = await db.from('orders').select('id,full_name,phone,wilaya,address,quantity,notes,status,created_at').order('created_at', { ascending: false }).limit(1000);
     if (error) return fail(request, 'تعذر تحميل الطلبات.', 503);
-    return reply(request, data.map((order) => ({ id: order.id, fullName: order.full_name, phone: order.phone, wilaya: order.wilaya, address: order.address, quantity: order.quantity, notes: order.notes, createdAt: order.created_at })));
+    return reply(request, data.map((order) => ({ id: order.id, fullName: order.full_name, phone: order.phone, wilaya: order.wilaya, address: order.address, quantity: order.quantity, notes: order.notes, status: order.status, createdAt: order.created_at })));
+  }
+  if (path === 'order-status' && request.method === 'POST') {
+    if (!await authorized(request)) return fail(request, 'انتهت الجلسة. سجّل الدخول مجددًا.', 401);
+    const body = await json(request);
+    if (!body || !Number.isSafeInteger(body.orderId) || body.orderId < 1 || !['new', 'confirmed', 'rejected'].includes(body.status)) return fail(request, 'تحقق من رقم الطلب والحالة الجديدة.', 400);
+    const { data, error } = await db.from('orders').update({ status: body.status }).eq('id', body.orderId).select('id').maybeSingle();
+    if (error) return fail(request, 'تعذر تحديث حالة الطلب.', 503);
+    return data ? reply(request, { ok: true }) : fail(request, 'لم يتم العثور على هذا الطلب.', 404);
   }
   if (path === 'settings' && request.method === 'POST') {
     if (!await authorized(request)) return fail(request, 'انتهت الجلسة. سجّل الدخول مجددًا.', 401);
