@@ -257,7 +257,7 @@ function readMediaEntries() {
 
 async function loadSettings() {
   const data = await api('settings');
-  const form = $('settingsForm'); form.elements.title.value = data.title || ''; form.elements.description.value = data.description || ''; form.elements.price.value = data.price || ''; form.elements.pixelId.value = data.pixelId || '';
+  const form = $('settingsForm'); form.elements.title.value = data.title || ''; form.elements.description.value = data.description || ''; form.elements.price.value = data.price || ''; form.elements.pixelId.value = '2240942626481684';
   $('mediaEditor').replaceChildren();
   for (const item of Array.isArray(data.media) ? data.media : []) addMediaEntry(item);
 }
@@ -346,7 +346,7 @@ $('settingsForm').addEventListener('submit', async event => {
       return;
     }
     await api('settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-    $('settingsStatus').textContent = 'تم حفظ الإعدادات. سيُستخدم معرّف Meta Pixel في صفحة الباك بعد التحديث.';
+    $('settingsStatus').textContent = 'تم حفظ الإعدادات. بيكسل Meta مدمج تلقائيًا في الموقع.';
   } catch (error) { $('settingsStatus').textContent = error.message; }
   finally { button.disabled = false; }
 });

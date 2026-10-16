@@ -1,6 +1,8 @@
 const API = 'https://cawroeqwtuxfmaqxuypd.supabase.co/functions/v1/course-api';
 const $ = id => document.getElementById(id);
 
+const META_PIXEL_ID = '2240942626481684';
+
 function initializeMetaPixel(value) {
   const metaPixelId = String(value || '').trim();
   if (!/^\d{6,20}$/.test(metaPixelId) || window.fbq) return;
@@ -15,6 +17,9 @@ function initializeMetaPixel(value) {
   window.fbq('init', metaPixelId);
   window.fbq('track', 'PageView');
 }
+
+// Start tracking independently of the settings request.
+initializeMetaPixel(META_PIXEL_ID);
 
 function readMetaCookie(name) {
   const prefix = `${name}=`;
@@ -69,7 +74,6 @@ function mediaCard(item, index) {
 fetch(`${API}?route=settings`).then(async response => {
   const result = await response.json(); if (!response.ok) throw Error(result.error); return result;
 }).then(settings => {
-  initializeMetaPixel(settings.pixelId);
   if (settings.title) document.title = `${settings.title} | البسكرية للتوابل`;
   if (settings.description) { const description = document.querySelector('.elb-lead'); if (description) description.textContent = settings.description; }
   const items = Array.isArray(settings.media) ? settings.media.filter(item => item && ['video', 'audio'].includes(item.kind) && item.url) : [];
