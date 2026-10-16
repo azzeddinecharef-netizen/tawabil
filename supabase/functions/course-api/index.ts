@@ -10,6 +10,7 @@ const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
 const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 // Keep compatibility with the name already used in the project's Supabase dashboard.
 const adminPassword = Deno.env.get('ADMIN_PASSWORD') ?? Deno.env.get('DMIN_PASSWORD') ?? '';
+const META_PIXEL_ID = '2240942626481684';
 const metaCapiAccessToken = Deno.env.get('META_CAPI_ACCESS_TOKEN') ?? '';
 const metaCapiTestEventCode = Deno.env.get('META_CAPI_TEST_EVENT_CODE') ?? '';
 const metaGraphApiVersion = Deno.env.get('META_GRAPH_API_VERSION') ?? 'v26.0';
@@ -134,7 +135,7 @@ Deno.serve(async (request: Request) => {
   const path = requestUrl.searchParams.get('route') ?? requestUrl.pathname.split('/').filter(Boolean).at(-1) ?? '';
   if (path === 'settings' && request.method === 'GET') {
     const { data, error } = await db.from('course_settings').select('title,description,price,media,pixel_id').eq('id', true).single();
-    return error ? fail(request, 'تعذر تحميل محتوى الباك.', 503) : reply(request, { title: data.title, description: data.description, price: data.price, media: data.media, pixelId: data.pixel_id });
+    return error ? fail(request, 'تعذر تحميل محتوى الباك.', 503) : reply(request, { title: data.title, description: data.description, price: data.price, media: data.media, pixelId: META_PIXEL_ID });
   }
   if (path === 'orders' && request.method === 'POST') {
     const body = await json(request);
@@ -147,8 +148,7 @@ Deno.serve(async (request: Request) => {
     // Legacy pages keep working; only opted-in updated clients use server tracking.
     if (eventId && body.metaConsent === true) {
       try {
-        const { data: settings } = await db.from('course_settings').select('pixel_id').eq('id', true).maybeSingle();
-        await sendMetaLead(request, body, eventId, settings?.pixel_id ?? '');
+        await sendMetaLead(request, body, eventId, META_PIXEL_ID);
       } catch { console.error('Meta CAPI tracking unavailable; order saved'); }
     }
     return reply(request, { ok: true, ...(eventId ? { eventId } : {}) }, 201);
@@ -211,7 +211,7 @@ Deno.serve(async (request: Request) => {
 if (path === 'settings' && request.method === 'POST') {
     if (!await authorized(request)) return fail(request, 'انتهت الجلسة. سجّل الدخول مجددًا.', 401);
     const body = await json(request);
-    const pixelId = body?.pixelId ?? '';
+    const pixelId = META_PIXEL_ID;
     if (!body || !validText(body.title, 200) || !validText(body.description, 3000) || !validText(body.price ?? '', 100, true) || !(pixelId === '' || typeof pixelId === 'string' && /^\d{6,20}$/.test(pixelId)) || !Array.isArray(body.media) || !body.media.every(validMedia)) {
       return fail(request, 'تحقق من عنوان الباك ووصفه والسعر ومعرّف Meta Pixel وروابط المقاطع.', 400);
     }
