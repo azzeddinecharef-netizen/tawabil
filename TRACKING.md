@@ -7,9 +7,15 @@ finishes loading. Everything else goes through one place, `emit()` in
 
 - Standard events via `fbq('track', …)`, everything else via
   `fbq('trackCustom', …)`.
-- Every call carries its own `eventID`. Lead and Purchase reuse the order's
-  `eventId`, which `course-api` also sends through the Conversions API, so
-  Meta counts each order once.
+- Every call carries its own `eventID`, including the `PageView` in the snippet.
+  Lead and Purchase reuse the order's `eventId`, which `course-api` also sends
+  through the Conversions API, so Meta counts each order once.
+- The pixel has a Conversions API Gateway set up in Meta (no code here): the
+  pixel script re-sends every browser event from a server. The shared
+  `eventID` is what lets Meta deduplicate the two copies.
+- Events Manager's Event Setup Tool can add events with no code change (they
+  arrive in the pixel config). If `Lead` counts track page views rather than
+  orders, look there for a rule firing Lead on the page URL.
 
 `admin.html` never loads the pixel, so staff working on orders don't end up in
 the ad audiences.

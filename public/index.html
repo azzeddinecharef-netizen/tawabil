@@ -14,10 +14,11 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@500;700;900&display=swap" rel="stylesheet">
 <link rel="preload" as="image" href="assets/biskria/el-biskria-hero.webp" type="image/webp">
-<!-- Meta Pixel: loaded first so PageView counts visitors who leave before the page finishes; journey.js sends the rest of the visit. -->
+<!-- Meta Pixel: loaded first so PageView counts visitors who leave before the page finishes; journey.js sends the rest of the visit.
+     The pixel has a Conversions API Gateway that re-sends every event from a server; the eventID is what lets Meta deduplicate the two copies. -->
 <script>
 !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
-fbq('init','2240942626481684');fbq('track','PageView');
+fbq('init','2240942626481684');fbq('track','PageView',{},{eventID:'page_view.'+Math.round(Date.now()/1000)+'.0.'+Math.random().toString(36).slice(2,10)});
 </script>
 
 
