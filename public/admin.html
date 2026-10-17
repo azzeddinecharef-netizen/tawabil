@@ -3,99 +3,700 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#f4f6f8">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; media-src 'self' https:; frame-src https://www.youtube-nocookie.com https://drive.google.com; connect-src 'self' https://cawroeqwtuxfmaqxuypd.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="theme-color" content="#141110">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; media-src 'self' https:; frame-src https://www.youtube-nocookie.com https://drive.google.com; connect-src 'self' https://cawroeqwtuxfmaqxuypd.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
   <title>إدارة الطلبات | بسكريا للتوابل</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
-  <link rel="stylesheet" href="mobile.css?v=admin-dashboard-1">
-  <link rel="stylesheet" href="admin-dashboard.css?v=admin-dashboard-1">
-  <script src="admin.js?v=admin-dashboard-1" defer></script>
+  <link rel="stylesheet" href="admin-dashboard.css?v=admin-figma-2">
+  <script src="admin.js?v=admin-figma-2" defer></script>
 </head>
 <body class="admin-page">
-  <header id="admin-login-nav" class="nav wrap admin-login-nav"><a href="./" class="brand"><span class="brand-mark" aria-hidden="true">✳</span><span>بسكريا للتوابل<small>لوحة إدارة الطلبيات</small></span></a><a class="button small" href="./">صفحة الزبائن ↗</a></header>
-  <main class="wrap admin-main">
-    <form id="login" class="form-card login login-3d"><figure class="login-spice-photo"><img src="assets/biskria/admin-spices.jpg" alt="مجموعة من التوابل البسكرية" width="118" height="118" fetchpriority="high"></figure><p class="eyebrow">مساحة الإدارة</p><h1>أهلًا بك.</h1><p>أدخل كلمة مرور الإدارة لمشاهدة الطلبات وتعديل محتوى صفحة الباك.</p><label>كلمة المرور<input name="password" type="password" autocomplete="current-password" required></label><button class="button full-button" type="submit">دخول لوحة الإدارة <span aria-hidden="true">↙</span></button><p id="loginStatus" role="status" class="error"></p></form>
 
+  <!-- Login Header -->
+  <header id="admin-login-nav" class="admin-login-nav">
+    <div class="login-nav-inner">
+      <a href="./" class="brand">
+        <span class="brand-logo-icon">🌿</span>
+        <span>بسكريا للتوابل <small>مركز إدارة الطلبيات</small></span>
+      </a>
+      <a class="button button-white small-btn" href="./">صفحة الزبائن ↗</a>
+    </div>
+  </header>
+
+  <main class="admin-main">
+    <!-- Login Card -->
+    <form id="login" class="login-card login-3d">
+      <figure class="login-spice-photo">
+        <img src="assets/admin/overview-banner-spices.jpg" alt="مجموعة من التوابل البسكرية" width="118" height="118" fetchpriority="high">
+      </figure>
+      <span class="login-badge">مساحة الإدارة</span>
+      <h1>أهلًا بك.</h1>
+      <p class="login-desc">أدخل كلمة مرور الإدارة لمتابعة الطلبات وتعديل محتوى المتجر.</p>
+      <label class="login-input-group">
+        <span>كلمة المرور</span>
+        <input name="password" type="password" autocomplete="current-password" placeholder="أدخل كلمة المرور..." required>
+      </label>
+      <button class="button button-gold full-button" type="submit">
+        دخول لوحة الإدارة <span aria-hidden="true">←</span>
+      </button>
+      <p id="loginStatus" role="status" class="login-error"></p>
+    </form>
+
+    <!-- Main Dashboard -->
     <section id="dashboard" class="admin-dashboard" hidden>
+      <!-- Mobile Top Navigation Header -->
+      <header class="admin-mobile-header">
+        <div class="mobile-brand">
+          <div class="brand-logo-icon">🌿</div>
+          <div>
+            <strong>بسكريا للتوابل</strong>
+            <small>مركز إدارة الطلبيات</small>
+          </div>
+        </div>
+        <button id="mobileLogout" class="mobile-logout-btn" type="button" aria-label="تسجيل الخروج" title="تسجيل الخروج">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        </button>
+      </header>
+
+      <!-- Mobile Navigation Segmented Tabs -->
+      <nav class="admin-mobile-tabs" aria-label="التنقل السريع">
+        <button type="button" class="mobile-tab is-active" data-admin-view="overview">نظرة عامة</button>
+        <button type="button" class="mobile-tab" data-admin-view="orders">الطلبات · <span id="mobileSideCount">0</span></button>
+        <button type="button" class="mobile-tab" data-admin-view="settings">محتوى الباك</button>
+      </nav>
+
+      <!-- Desktop Sidebar (RTL Right) -->
       <aside class="admin-sidebar">
-        <a href="./" class="sidebar-brand"><span class="brand-mark" aria-hidden="true">✳</span><span>بسكريا للتوابل<small>مركز إدارة الطلبيات</small></span></a>
-        <p class="sidebar-caption">القائمة الرئيسية</p>
+        <a href="./" class="sidebar-brand">
+          <span class="brand-logo-box">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 0 1 10 10c0 5.5-4.5 10-10 10S2 17.5 2 12A10 10 0 0 1 12 2z"/><path d="M12 6v6l4 2"/></svg>
+          </span>
+          <div class="brand-text">
+            <strong>بسكريا للتوابل</strong>
+            <small>مركز إدارة الطلبيات</small>
+          </div>
+        </a>
+
+        <p class="sidebar-caption">مساحة الإدارة</p>
         <nav class="admin-navigation" aria-label="التنقل في لوحة الإدارة">
-          <button type="button" class="admin-nav-link is-active" data-admin-view="overview" aria-current="page"><span class="nav-icon" aria-hidden="true">▦</span>نظرة عامة</button>
-          <button type="button" class="admin-nav-link" data-admin-view="orders"><span class="nav-icon" aria-hidden="true">☷</span>الطلبات <span id="sideCount" class="nav-count">0</span></button>
-          <button type="button" class="admin-nav-link" data-admin-view="settings"><span class="nav-icon" aria-hidden="true">⚙</span>محتوى الباك</button>
+          <button type="button" class="admin-nav-link is-active" data-admin-view="overview" aria-current="page">
+            <span class="nav-icon" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/></svg>
+            </span>
+            <span>نظرة عامة</span>
+          </button>
+          <button type="button" class="admin-nav-link" data-admin-view="orders">
+            <span class="nav-icon" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+            </span>
+            <span>الطلبات</span>
+            <span id="sideCount" class="nav-count-badge">0</span>
+          </button>
+          <button type="button" class="admin-nav-link" data-admin-view="settings">
+            <span class="nav-icon" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+            </span>
+            <span>محتوى الباك</span>
+          </button>
         </nav>
+
+        <div class="sidebar-artisan-card">
+          <span class="artisan-icon">🌿</span>
+          <strong class="artisan-title">أصالة بسكرة، في كل خلطة.</strong>
+          <p class="artisan-sub">توابل جزائرية بحرفة وشغف</p>
+        </div>
+
         <div class="sidebar-footer">
-          <div class="system-state"><span class="system-dot" aria-hidden="true"></span><span>النظام متصل<small>تزامن مباشر مع الطلبات</small></span></div>
-          <button id="logout" class="sidebar-logout" type="button"><span aria-hidden="true">↪</span> تسجيل الخروج</button>
+          <div class="system-state">
+            <span class="system-dot" aria-hidden="true"></span>
+            <span>النظام متصل · تزامن مباشر</span>
+          </div>
+          <button id="logout" class="sidebar-logout" type="button">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            <span>تسجيل الخروج</span>
+          </button>
+          <p class="sidebar-caption-foot">معاينة تصميم · بيانات حقيقية</p>
         </div>
       </aside>
 
+      <!-- Main Workspace -->
       <div class="admin-workspace">
+        <!-- Topbar -->
         <header class="dashboard-topbar">
-          <div><p class="topbar-kicker">مساحة العمل / <span id="pageCrumb">نظرة عامة</span></p><h1 id="adminPageTitle">نظرة عامة</h1></div>
-          <div class="topbar-actions"><span id="lastUpdated" class="last-updated">—</span><button id="refresh" class="icon-button" type="button" aria-label="تحديث الطلبات" title="تحديث الطلبات">↻</button><a class="topbar-store-link" href="./">عرض صفحة الباك <span aria-hidden="true">↗</span></a></div>
+          <div class="topbar-crumbs">
+            <span class="topbar-kicker">مساحة العمل / <strong id="pageCrumb">نظرة عامة</strong></span>
+          </div>
+          <div class="topbar-actions">
+            <div class="last-updated-wrap">
+              <span id="lastUpdated" class="last-updated">—</span>
+              <button id="refresh" class="icon-button" type="button" aria-label="تحديث الطلبات" title="تحديث الطلبات">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+              </button>
+            </div>
+            <a class="button button-white topbar-store-link" href="./" target="_blank">
+              <span>عرض صفحة الباك</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M7 17l10-10M7 7h10v10"/></svg>
+            </a>
+          </div>
         </header>
 
+        <!-- VIEW 1: OVERVIEW (نظرة عامة) -->
         <section class="admin-view" data-view-panel="overview">
-          <div class="welcome-banner"><div><span class="welcome-tag">بسكريا للتوابل · متابعة الطلبيات</span><h2>مرحبًا بعودتك 👋</h2><p>من هنا تتابع طلبيات الزبائن وتدير محتوى باك التوابل بسهولة.</p></div><button class="button dashboard-primary" type="button" data-go-view="orders">استعراض الطلبيات <span aria-hidden="true">←</span></button><span class="banner-decoration" aria-hidden="true">✳</span></div>
-          <div class="stats-grid" aria-label="ملخص الطلبات">
-            <article class="stat-card stat-total"><span class="stat-icon" aria-hidden="true">▤</span><span class="stat-label">كل الطلبات</span><strong id="statTotal">0</strong><span class="stat-foot">إجمالي الطلبات المسجلة</span></article>
-            <article class="stat-card stat-new"><span class="stat-icon" aria-hidden="true">◷</span><span class="stat-label">طلبات جديدة</span><strong id="statNew">0</strong><span class="stat-foot">تحتاج إلى المتابعة</span></article>
-            <article class="stat-card stat-confirmed"><span class="stat-icon" aria-hidden="true">✓</span><span class="stat-label">طلبات مؤكدة</span><strong id="statConfirmed">0</strong><span class="stat-foot">جاهزة للتوصيل والمتابعة</span></article>
-            <article class="stat-card stat-rejected"><span class="stat-icon" aria-hidden="true">×</span><span class="stat-label">طلبات مرفوضة</span><strong id="statRejected">0</strong><span class="stat-foot">الطلبات غير المكتملة</span></article>
+          <div class="view-header">
+            <h1 class="view-title">نظرة عامة</h1>
+            <p class="view-subtitle">كل ما تحتاجه لإدارة طلباتك، بوضوح وهدوء.</p>
           </div>
-          <div class="overview-grid">
-            <article class="surface-card status-summary"><div class="surface-heading"><div><h2>حالة الطلبات</h2><p>توزيع الطلبات حسب مرحلة المتابعة</p></div><button type="button" class="text-action" data-go-view="orders">عرض الكل ←</button></div>
-              <div class="status-meter"><div class="meter-label"><span><i class="meter-dot dot-new"></i>جديدة</span><strong id="overviewNew">0</strong></div><div class="meter-track"><span id="meterNew" class="meter-fill fill-new"></span></div></div>
-              <div class="status-meter"><div class="meter-label"><span><i class="meter-dot dot-confirmed"></i>مؤكدة</span><strong id="overviewConfirmed">0</strong></div><div class="meter-track"><span id="meterConfirmed" class="meter-fill fill-confirmed"></span></div></div>
-              <div class="status-meter"><div class="meter-label"><span><i class="meter-dot dot-rejected"></i>مرفوضة</span><strong id="overviewRejected">0</strong></div><div class="meter-track"><span id="meterRejected" class="meter-fill fill-rejected"></span></div></div>
-            </article>
-            <article class="surface-card recent-summary"><div class="surface-heading"><div><h2>آخر الطلبات</h2><p>أحدث الطلبات التي وصلت إلى المتجر</p></div><span class="live-label"><i></i>مباشر</span></div><div id="recentOrders" class="recent-orders"><p class="recent-empty">جارٍ تحميل الطلبات…</p></div></article>
-          </div>
-        </section>
 
-        <section class="admin-view" data-view-panel="orders" hidden>
-          <div class="orders-intro"><div><p class="section-eyebrow">إدارة ومتابعة</p><h2>طلبيات الزبائن</h2><p>ابحث في الطلبيات، حدّث الحالة، أو افتح التفاصيل للتعديل.</p></div><div class="orders-intro-actions"><span id="count" class="orders-total-badge">0 طلب</span><button id="messageTemplates" class="export-orders" type="button"><span aria-hidden="true">▤</span> قوالب الرسائل</button><button id="exportOrders" class="export-orders" type="button"><span aria-hidden="true">⇩</span> تصدير Excel / CSV</button></div></div>
-          <div class="orders-toolbar surface-card">
-            <div class="toolbar-search"><span aria-hidden="true">⌕</span><input id="search" type="search" placeholder="ابحث بالاسم أو الهاتف أو الولاية أو العنوان…" aria-label="البحث في الطلبات"><button id="clearSearch" class="clear-search" type="button" aria-label="مسح البحث" hidden>×</button></div>
-            <div class="filters-row"><div id="statusFilters" class="status-filters" role="group" aria-label="تصفية الطلبات حسب الحالة">
-              <button class="status-filter is-active" type="button" data-status="all" aria-pressed="true">الكل <span id="countAll">0</span></button>
-              <button class="status-filter" type="button" data-status="new" aria-pressed="false">جديدة <span id="countNew">0</span></button>
-              <button class="status-filter" type="button" data-status="confirmed" aria-pressed="false">مؤكدة <span id="countConfirmed">0</span></button>
-              <button class="status-filter" type="button" data-status="rejected" aria-pressed="false">مرفوضة <span id="countRejected">0</span></button>
-            </div><div class="filter-controls"><label class="filter-select-label">الولاية<select id="filterWilaya" aria-label="تصفية حسب الولاية"><option value="">كل الولايات</option></select></label><label class="sort-control">ترتيب حسب<select id="sortOrders" aria-label="ترتيب الطلبات"><option value="newest">الأحدث أولًا</option><option value="oldest">الأقدم أولًا</option><option value="quantity">الكمية الأكبر</option></select></label></div></div>
-            <div class="date-filters"><label>من تاريخ<input id="dateFrom" type="date" aria-label="من تاريخ"></label><span aria-hidden="true">←</span><label>إلى تاريخ<input id="dateTo" type="date" aria-label="إلى تاريخ"></label><label class="page-size-label">عدد النتائج<select id="pageSize" aria-label="عدد الطلبات في الصفحة"><option value="25">25</option><option value="50">50</option><option value="100">100</option><option value="all">الكل</option></select></label><button id="resetFilters" class="reset-filters" type="button">إعادة ضبط الفلاتر</button></div>
-          </div>
-          <p id="adminStatus" role="status" aria-live="polite" class="admin-status"></p>
-          <div class="table-wrap orders-table-wrap"><table><thead><tr><th>رقم الطلب</th><th>الاسم الكامل</th><th>رقم الهاتف</th><th>الولاية</th><th>عنوان التوصيل</th><th>الكمية</th><th>ملاحظات</th><th>الحالة</th><th>وقت الطلب</th><th>إجراء</th></tr></thead><tbody id="rows"></tbody></table></div>
-          <div id="ordersMobile" class="orders-mobile" aria-live="polite"></div>
-          <nav id="ordersPagination" class="orders-pagination" aria-label="صفحات الطلبات"><button id="previousPage" type="button" aria-label="الصفحة السابقة">السابق</button><span id="pageIndicator">1 / 1</span><button id="nextPage" type="button" aria-label="الصفحة التالية">التالي</button></nav>
-        </section>
-
-        <section class="admin-view" data-view-panel="settings" hidden>
-          <div class="orders-intro"><div><p class="section-eyebrow">تخصيص الواجهة</p><h2>محتوى الباك</h2><p>حدّث وصف الباك والسعر ومقاطع الفيديو والصوت التي تظهر للزبائن.</p></div></div>
-          <form id="settingsForm" class="settings-panel" novalidate>
-            <div class="settings-tabs" role="tablist" aria-label="أقسام إعدادات الصفحة">
-              <button type="button" class="settings-tab is-active" role="tab" aria-selected="true" data-settings-tab="general">عام</button>
-              <button type="button" class="settings-tab" role="tab" aria-selected="false" data-settings-tab="content">المحتوى</button>
-              <button type="button" class="settings-tab" role="tab" aria-selected="false" data-settings-tab="tracking">التتبع والتواصل</button>
-              <button type="button" class="settings-tab" role="tab" aria-selected="false" data-settings-tab="media">الوسائط</button>
+          <!-- Hero Welcome Banner -->
+          <div class="welcome-banner">
+            <div class="banner-content">
+              <h2>مرحبًا بعودتك 👋 · بسكريا للتوابل</h2>
+              <p>لديك <strong id="bannerNewCount">0</strong> طلبًا جديدًا بانتظار التأكيد. لنمنح كل عميل تجربة بطعم الأصالة.</p>
+              <button class="button button-gold banner-cta" type="button" data-go-view="orders">
+                <span>متابعة الطلبات الجديدة</span>
+                <span aria-hidden="true">←</span>
+              </button>
             </div>
-            <section class="settings-tab-panel" data-settings-panel="general" role="tabpanel"><div class="settings-panel-heading"><h3>معلومات الباك</h3><p>المعلومات الرئيسية التي تظهر للزائر في صفحة الطلب.</p></div><div class="settings-form-grid"><label>اسم الباك<input name="title" maxlength="200"></label><label class="settings-price">السعر <span class="optional">اختياري</span><input name="price" maxlength="100" placeholder="مثال: 2500 دج"></label></div></section>
-            <section class="settings-tab-panel" data-settings-panel="content" role="tabpanel" hidden><div class="settings-panel-heading"><h3>محتوى الواجهة</h3><p>اكتب وصفًا واضحًا ومختصرًا يشرح خلطة التوابل وفوائدها.</p></div><div class="settings-form-grid"><label class="settings-description">وصف الباك<textarea name="description" maxlength="3000" rows="7"></textarea></label></div></section>
-            <section class="settings-tab-panel" data-settings-panel="tracking" role="tabpanel" hidden><div class="settings-panel-heading"><h3>التتبع ورابط المتجر</h3><p>بيكسل Meta مدمج مباشرة في الموقع؛ لا يحتاج إلى إدخال أو حفظ.</p></div><div class="meta-settings"><h2>قياس إعلانات Meta</h2><p class="help-text">يُسجّل الموقع مسار الزائر كاملًا: PageView، وعمق التمرير والوقت في الصفحة والأقسام المشاهدة، وViewContent عند الوصول لتركيبة المنتج أو نصف الصفحة، وAddToCart وInitiateCheckout، وتتبّع الاستمارة حقلًا بحقل، ثم Lead وPurchase بقيمة العرض بالدينار بعد نجاح الطلب فقط، وأحداث المغادرة مثل PageLeave وAbandonment. القائمة الكاملة في TRACKING.md. المعرّف ثابت ومتطابق في الموقع والخادم.</p><label>معرّف Meta Pixel<input readonly value="2240942626481684" name="pixelId" inputmode="numeric" autocomplete="off" dir="ltr" pattern="[0-9]{6,20}" maxlength="20" placeholder="مثال: 123456789012345"></label></div><div class="master-link-card"><div><strong>رابط صفحة الطلب</strong><span dir="ltr">https://tawabil.africacold.fr/</span></div><button id="copyStoreLink" type="button" class="copy-link-button">نسخ الرابط</button></div></section>
-            <section class="settings-tab-panel" data-settings-panel="media" role="tabpanel" hidden><div class="media-settings"><div class="surface-heading"><div><h3>الفيديوهات والرسائل الصوتية</h3><p class="help-text">أضف عنوانًا ورابطًا لكل مقطع ليظهر مدمجًا داخل صفحة الباك.</p></div></div><div id="mediaEditor" class="media-editor"></div><button id="addMedia" class="add-media" type="button">＋ إضافة فيديو أو مقطع صوتي</button></div></section>
-            <div class="settings-save-row"><button class="button settings-save" type="submit">حفظ التغييرات</button><p id="settingsStatus" class="settings-status" role="status" aria-live="polite"></p></div>
-          </form>
+            <div class="banner-photo-wrap">
+              <img src="assets/admin/overview-banner-spices.jpg" alt="مجموعة توابل بسكرية" class="banner-photo" loading="lazy">
+            </div>
+          </div>
+
+          <!-- 4 KPI Stat Cards -->
+          <div class="stats-grid" aria-label="ملخص الطلبات">
+            <!-- Total Orders -->
+            <article class="stat-card">
+              <div class="stat-head">
+                <span class="stat-label">كل الطلبات</span>
+                <span class="stat-icon icon-box">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+                </span>
+              </div>
+              <strong id="statTotal" class="stat-number">0</strong>
+              <div class="stat-foot-pill">منذ إطلاق الباك</div>
+            </article>
+
+            <!-- New Orders -->
+            <article class="stat-card">
+              <div class="stat-head">
+                <span class="stat-label">طلبات جديدة</span>
+                <span class="stat-icon icon-new">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                </span>
+              </div>
+              <strong id="statNew" class="stat-number">0</strong>
+              <div class="stat-foot-pill pill-warning">بانتظار التأكيد</div>
+            </article>
+
+            <!-- Confirmed Orders -->
+            <article class="stat-card">
+              <div class="stat-head">
+                <span class="stat-label">طلبات مؤكدة</span>
+                <span class="stat-icon icon-confirmed">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                </span>
+              </div>
+              <strong id="statConfirmed" class="stat-number">0</strong>
+              <div class="stat-foot-pill pill-success"><span id="statConfirmedPct">0%</span> من إجمالي الطلبات</div>
+            </article>
+
+            <!-- Rejected Orders -->
+            <article class="stat-card">
+              <div class="stat-head">
+                <span class="stat-label">طلبات مرفوضة</span>
+                <span class="stat-icon icon-rejected">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </span>
+              </div>
+              <strong id="statRejected" class="stat-number">0</strong>
+              <div class="stat-foot-pill pill-danger"><span id="statRejectedPct">0%</span> من إجمالي الطلبات</div>
+            </article>
+          </div>
+
+          <!-- Overview Two-Column Grid -->
+          <div class="overview-grid">
+            <!-- Left: Status Meters -->
+            <article class="surface-card status-distribution-card">
+              <div class="card-heading">
+                <div>
+                  <h2>توزيع حالات الطلبات</h2>
+                  <p id="meterSubtitle">0 طلبًا · منذ إطلاق الباك</p>
+                </div>
+              </div>
+
+              <div class="meter-group">
+                <div class="status-meter">
+                  <div class="meter-label">
+                    <span><i class="meter-dot dot-new"></i>جديدة</span>
+                    <strong><span id="overviewNew">0</span> · <span id="overviewNewPct">0%</span></strong>
+                  </div>
+                  <div class="meter-track">
+                    <span id="meterNew" class="meter-fill fill-new"></span>
+                  </div>
+                </div>
+
+                <div class="status-meter">
+                  <div class="meter-label">
+                    <span><i class="meter-dot dot-confirmed"></i>مؤكدة</span>
+                    <strong><span id="overviewConfirmed">0</span> · <span id="overviewConfirmedPct">0%</span></strong>
+                  </div>
+                  <div class="meter-track">
+                    <span id="meterConfirmed" class="meter-fill fill-confirmed"></span>
+                  </div>
+                </div>
+
+                <div class="status-meter">
+                  <div class="meter-label">
+                    <span><i class="meter-dot dot-rejected"></i>مرفوضة</span>
+                    <strong><span id="overviewRejected">0</span> · <span id="overviewRejectedPct">0%</span></strong>
+                  </div>
+                  <div class="meter-track">
+                    <span id="meterRejected" class="meter-fill fill-rejected"></span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="meter-insight-card">
+                <span class="insight-arrow">↗</span>
+                <span id="meterInsightText">7 من كل 10 طلبات تم تأكيدها بنجاح.</span>
+              </div>
+            </article>
+
+            <!-- Right: Recent Orders List -->
+            <article class="surface-card recent-orders-card">
+              <div class="card-heading">
+                <div>
+                  <h2>أحدث الطلبات</h2>
+                  <p>أحدث الطلبيات الواصلة للمتجر</p>
+                </div>
+                <button type="button" class="text-action-link" data-go-view="orders">كل الطلبات ←</button>
+              </div>
+              <div id="recentOrders" class="recent-orders-list">
+                <p class="recent-empty">جارٍ تحميل أحدث الطلبات…</p>
+              </div>
+            </article>
+          </div>
+
+          <!-- Bottom Pack Strip -->
+          <div class="overview-pack-strip">
+            <div class="pack-strip-info">
+              <div class="pack-strip-icon-box">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+              </div>
+              <div>
+                <strong id="overviewPackTitle">باك نكهات بسكرة</strong>
+                <small id="overviewPackDesc">خلطة شاورما وتوابل أصيلة · السعر للباك الواحد</small>
+              </div>
+            </div>
+            <strong id="overviewPackPrice" class="pack-strip-price">15,000 دج</strong>
+          </div>
         </section>
 
-        <dialog id="editOrderDialog" class="order-edit-dialog" aria-labelledby="editOrderHeading">
-          <form id="editOrderForm" class="order-edit-form"><input type="hidden" name="orderId"><div class="order-edit-heading"><div><p class="section-eyebrow">تحديث البيانات</p><h2 id="editOrderHeading">تعديل بيانات الطلب</h2><p id="editOrderNumber"></p></div><button id="cancelEditOrder" class="button small" type="button">إلغاء</button></div><div class="order-edit-fields"><label>الاسم الكامل<input name="fullName" type="text" maxlength="200" autocomplete="name" required></label><label>رقم الهاتف<input name="phone" type="tel" maxlength="25" autocomplete="tel" required></label><label>الولاية<input name="wilaya" type="text" maxlength="100" required></label><label>عنوان التوصيل<input name="address" type="text" maxlength="300" required></label><label>الكمية<input name="quantity" type="number" min="1" max="99" required></label><label>الحالة<select name="status"><option value="new">جديدة</option><option value="confirmed">مؤكدة</option><option value="rejected">مرفوضة</option></select></label><label class="order-edit-notes">ملاحظات<textarea name="notes" maxlength="1000" rows="3"></textarea></label></div><div class="order-edit-actions"><button class="button" type="submit">حفظ التعديلات</button></div></form>
+        <!-- VIEW 2: ORDERS MANAGEMENT (الطلبات) -->
+        <section class="admin-view" data-view-panel="orders" hidden>
+          <div class="orders-header-row">
+            <div>
+              <div class="orders-title-wrap">
+                <h1 class="view-title">إدارة الطلبات</h1>
+                <span id="ordersCountBadge" class="orders-header-badge">0</span>
+              </div>
+              <p class="view-subtitle">من أول طلب إلى التأكيد، كل التفاصيل بين يديك.</p>
+            </div>
+            <div class="orders-top-actions">
+              <button id="messageTemplates" class="button button-gold" type="button">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                <span>قوالب الرسائل</span>
+              </button>
+              <button id="exportOrders" class="button button-white" type="button">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                <span>تصدير Excel / CSV</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Orders Filters Toolbar -->
+          <div class="orders-toolbar-card">
+            <!-- Row 1: Search & Status Tabs -->
+            <div class="toolbar-primary-row">
+              <div class="toolbar-search-box">
+                <span class="search-icon" aria-hidden="true">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                </span>
+                <input id="search" type="search" placeholder="ابحث بالاسم، الهاتف، الولاية..." aria-label="البحث في الطلبات">
+                <button id="clearSearch" class="clear-search-btn" type="button" aria-label="مسح البحث" hidden>×</button>
+              </div>
+
+              <div id="statusFilters" class="status-tabs-group" role="group" aria-label="تصفية الطلبات">
+                <button class="status-tab is-active" type="button" data-status="all" aria-pressed="true">
+                  <span>الكل</span> <strong id="countAll">0</strong>
+                </button>
+                <button class="status-tab tab-new" type="button" data-status="new" aria-pressed="false">
+                  <span>جديدة</span> <strong id="countNew">0</strong>
+                </button>
+                <button class="status-tab tab-confirmed" type="button" data-status="confirmed" aria-pressed="false">
+                  <span>مؤكدة</span> <strong id="countConfirmed">0</strong>
+                </button>
+                <button class="status-tab tab-rejected" type="button" data-status="rejected" aria-pressed="false">
+                  <span>مرفوضة</span> <strong id="countRejected">0</strong>
+                </button>
+              </div>
+            </div>
+
+            <!-- Row 2: Secondary Dropdown Filters -->
+            <div class="toolbar-secondary-row">
+              <div class="dropdown-filter-group">
+                <div class="custom-select-wrap">
+                  <select id="filterWilaya" aria-label="تصفية حسب الولاية">
+                    <option value="">كل الولايات</option>
+                  </select>
+                </div>
+
+                <div class="custom-select-wrap date-wrap">
+                  <input id="dateFrom" type="date" aria-label="من تاريخ" title="من تاريخ">
+                  <span class="date-arrow">←</span>
+                  <input id="dateTo" type="date" aria-label="إلى تاريخ" title="إلى تاريخ">
+                </div>
+
+                <div class="custom-select-wrap">
+                  <select id="sortOrders" aria-label="ترتيب الطلبات">
+                    <option value="newest">الترتيب: الأحدث أولًا ⇅</option>
+                    <option value="oldest">الترتيب: الأقدم أولًا ⇅</option>
+                    <option value="quantity">الترتيب: الكمية الأكبر ⇅</option>
+                  </select>
+                </div>
+
+                <div class="custom-select-wrap page-size-wrap">
+                  <select id="pageSize" aria-label="عدد الطلبات في الصفحة">
+                    <option value="25">عرض 25</option>
+                    <option value="50">عرض 50</option>
+                    <option value="100">عرض 100</option>
+                    <option value="all">عرض الكل</option>
+                  </select>
+                </div>
+              </div>
+
+              <button id="resetFilters" class="reset-filter-btn" type="button">إعادة ضبط الفلاتر</button>
+            </div>
+          </div>
+
+          <!-- Status / Results Announcement -->
+          <p id="adminStatus" role="status" aria-live="polite" class="admin-status-text"></p>
+
+          <!-- Desktop Orders Table -->
+          <div class="table-responsive-wrap">
+            <table class="figma-orders-table">
+              <thead>
+                <tr>
+                  <th>رقم الطلب</th>
+                  <th>الاسم الكامل</th>
+                  <th>الهاتف</th>
+                  <th>الولاية</th>
+                  <th>عنوان التوصيل</th>
+                  <th>الكمية</th>
+                  <th>ملاحظات</th>
+                  <th>الحالة</th>
+                  <th>وقت الطلب</th>
+                  <th>إجراءات</th>
+                </tr>
+              </thead>
+              <tbody id="rows"></tbody>
+            </table>
+          </div>
+
+          <!-- Mobile Orders Card Feed -->
+          <div id="ordersMobile" class="orders-mobile-feed" aria-live="polite"></div>
+
+          <!-- Pagination Bar -->
+          <div class="orders-pagination-bar">
+            <span id="count" class="pagination-summary">عرض 0 من 0 طلب</span>
+            <nav id="ordersPagination" class="pagination-controls" aria-label="صفحات الطلبات">
+              <button id="previousPage" type="button" class="page-arrow-btn" aria-label="الصفحة السابقة">‹</button>
+              <span id="pageIndicator" class="page-indicator">1 / 1</span>
+              <button id="nextPage" type="button" class="page-arrow-btn" aria-label="الصفحة التالية">›</button>
+            </nav>
+          </div>
+        </section>
+
+        <!-- VIEW 3: SETTINGS PANEL (إعدادات الباك) -->
+        <section class="admin-view" data-view-panel="settings" hidden>
+          <div class="view-header">
+            <h1 class="view-title">إعدادات الباك</h1>
+            <p class="view-subtitle">كل تفاصيل منتجك، من الحكاية إلى آخر لمسة.</p>
+          </div>
+
+          <div class="settings-notice-banner">
+            <span class="notice-icon">📋</span>
+            <span>تظهر أدناه خيارات التبويبات الأربعة لمراجعة وتحديث جميع إعدادات الباك.</span>
+          </div>
+
+          <div class="settings-layout-grid">
+            <!-- Left: Settings Form Tabs -->
+            <form id="settingsForm" class="settings-main-form" novalidate>
+              <div class="settings-tabs-nav" role="tablist" aria-label="أقسام الإعدادات">
+                <button type="button" class="settings-tab-btn is-active" role="tab" aria-selected="true" data-settings-tab="general">عام</button>
+                <button type="button" class="settings-tab-btn" role="tab" aria-selected="false" data-settings-tab="content">المحتوى</button>
+                <button type="button" class="settings-tab-btn" role="tab" aria-selected="false" data-settings-tab="tracking">التتبع</button>
+                <button type="button" class="settings-tab-btn" role="tab" aria-selected="false" data-settings-tab="media">الوسائط</button>
+              </div>
+
+              <!-- Tab 1: General (عام) -->
+              <div class="settings-tab-panel" data-settings-panel="general" role="tabpanel">
+                <div class="settings-section-head">
+                  <h3>تفاصيل الباك</h3>
+                  <p>الاسم والسعر اللذان يظهران لعملائك في صفحة الباك.</p>
+                </div>
+                <div class="settings-fields-stack">
+                  <label class="form-group">
+                    <span class="label-text">عنوان الباك</span>
+                    <input name="title" id="settingsTitleInput" maxlength="200" placeholder="مثال: باك نكهات بسكرة" required>
+                  </label>
+                  <label class="form-group">
+                    <span class="label-text">سعر الباك</span>
+                    <input name="price" id="settingsPriceInput" maxlength="100" placeholder="مثال: 15,000 دج">
+                    <small class="field-hint">السعر للباك الواحد - لا يشمل رسوم التوصيل</small>
+                  </label>
+                </div>
+              </div>
+
+              <!-- Tab 2: Content (المحتوى) -->
+              <div class="settings-tab-panel" data-settings-panel="content" role="tabpanel" hidden>
+                <div class="settings-section-head">
+                  <h3>حكاية الباك ومكوناته</h3>
+                  <p>نصوص واضحة تُبرز أصالة منتجك وتساعد العميل على الاختيار.</p>
+                </div>
+                <div class="settings-fields-stack">
+                  <label class="form-group">
+                    <span class="label-text">وصف الباك</span>
+                    <textarea name="description" id="settingsDescInput" maxlength="3000" rows="6" placeholder="اكتب وصفاً جذاباً يشرح خلطة التوابل وطريقة استخدامها..."></textarea>
+                  </label>
+                </div>
+              </div>
+
+              <!-- Tab 3: Tracking (التتبع) -->
+              <div class="settings-tab-panel" data-settings-panel="tracking" role="tabpanel" hidden>
+                <div class="settings-section-head">
+                  <h3>التتبع ورابط المتجر</h3>
+                  <p>أضف معرّف التتبع والرابط المخصص لصفحة الباك.</p>
+                </div>
+                <div class="settings-fields-stack">
+                  <label class="form-group">
+                    <span class="label-text">معرّف Meta Pixel</span>
+                    <input readonly value="2240942626481684" name="pixelId" inputmode="numeric" dir="ltr" pattern="[0-9]{6,20}" maxlength="20">
+                    <small class="field-hint">بيكسل Meta مدمج ومتزامن مع المتجر والخادم تلقائيًا.</small>
+                  </label>
+                  <div class="form-group">
+                    <span class="label-text">رابط المتجر</span>
+                    <div class="store-link-row">
+                      <div class="store-link-input" dir="ltr">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                        <span id="storeUrlDisplay">https://tawabil.africacold.fr/</span>
+                      </div>
+                      <button id="copyStoreLink" type="button" class="button button-white copy-btn">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                        <span>نسخ الرابط</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Tab 4: Media (الوسائط) -->
+              <div class="settings-tab-panel" data-settings-panel="media" role="tabpanel" hidden>
+                <div class="settings-section-head">
+                  <h3>مكتبة الوسائط</h3>
+                  <p>فيديوهات وتسجيلات صوتية تكتمل بها قصة الباك في صفحتك.</p>
+                </div>
+                <div id="mediaEditor" class="media-cards-grid"></div>
+                <button id="addMedia" class="button button-dashed add-media-btn" type="button">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  <span>إضافة وسيط</span>
+                </button>
+              </div>
+
+              <!-- Sticky Save Bar -->
+              <div class="settings-sticky-footer">
+                <button class="button button-gold save-submit-btn" type="submit">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                  <span>حفظ التغييرات</span>
+                </button>
+                <p id="settingsStatus" class="save-status-msg" role="status" aria-live="polite">آخر حفظ - متزامن مع المتجر</p>
+              </div>
+            </form>
+
+            <!-- Right: Live Pack Preview Card -->
+            <aside class="settings-preview-sidebar">
+              <div class="pack-preview-card">
+                <figure class="preview-img-wrap">
+                  <img src="assets/admin/pack-preview-jars.jpg" alt="باك توابل بسكريا" class="preview-img" loading="lazy">
+                </figure>
+                <div class="preview-body">
+                  <span class="preview-caption">معاينة الباك</span>
+                  <h3 id="previewCardTitle" class="preview-title">باك نكهات بسكرة</h3>
+                  <p id="previewCardSub" class="preview-sub">6 توابل · 600 غ من الأصالة</p>
+                  <strong id="previewCardPrice" class="preview-price">15,000 دج</strong>
+                  <a href="./" target="_blank" class="button button-white full-button preview-link">
+                    <span>عرض صفحة الباك</span>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M7 17l10-10M7 7h10v10"/></svg>
+                  </a>
+                </div>
+              </div>
+            </aside>
+          </div>
+        </section>
+
+        <!-- DIALOG 1: EDIT ORDER (تعديل الطلب) -->
+        <dialog id="editOrderDialog" class="figma-modal" aria-labelledby="editOrderHeading">
+          <form id="editOrderForm" class="modal-form-wrap">
+            <input type="hidden" name="orderId">
+            <div class="modal-header">
+              <button id="cancelEditOrder" class="modal-close-circle" type="button" aria-label="إغلاق">×</button>
+              <div>
+                <h2 id="editOrderHeading">تعديل الطلب</h2>
+                <p id="editOrderNumber" class="modal-sub">الطلب # · راجع بيانات العميل قبل التأكيد.</p>
+              </div>
+            </div>
+
+            <!-- Summary Box -->
+            <div class="modal-order-summary-box">
+              <div class="summary-box-info">
+                <div class="summary-box-icon">📦</div>
+                <div>
+                  <strong id="modalSummaryTitle">باك نكهات بسكرة</strong>
+                  <small id="modalSummarySubtitle">الدفع عند الاستلام</small>
+                </div>
+              </div>
+              <span id="modalSummaryStatus" class="order-status-pill status-new">• جديدة</span>
+            </div>
+
+            <div class="modal-fields-grid">
+              <label class="modal-field full-width">
+                <span>الاسم الكامل</span>
+                <input name="fullName" type="text" maxlength="200" autocomplete="name" required placeholder="اسم العميل">
+              </label>
+
+              <label class="modal-field">
+                <span>رقم الهاتف</span>
+                <input name="phone" type="tel" maxlength="25" autocomplete="tel" dir="ltr" required placeholder="0550 00 00 00">
+              </label>
+
+              <label class="modal-field">
+                <span>الولاية</span>
+                <select name="wilaya" id="modalWilayaSelect" required></select>
+              </label>
+
+              <label class="modal-field full-width">
+                <span>عنوان التوصيل</span>
+                <input name="address" type="text" maxlength="300" required placeholder="الحي، الشارع، رقم الباب أو المعلم">
+              </label>
+
+              <label class="modal-field">
+                <span>الكمية</span>
+                <input name="quantity" type="number" min="1" max="99" required value="1">
+              </label>
+
+              <label class="modal-field">
+                <span>حالة الطلب</span>
+                <select name="status">
+                  <option value="new">جديدة</option>
+                  <option value="confirmed">مؤكدة</option>
+                  <option value="rejected">مرفوضة</option>
+                </select>
+              </label>
+
+              <label class="modal-field full-width">
+                <span>ملاحظات</span>
+                <textarea name="notes" maxlength="1000" rows="3" placeholder="ملاحظات الاتصال أو وقت التوصيل المناسب..."></textarea>
+              </label>
+            </div>
+
+            <div class="modal-privacy-note">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              <span>تُستخدم بيانات العميل لمتابعة هذا الطلب فقط.</span>
+            </div>
+
+            <div class="modal-footer">
+              <button class="button button-gold" type="submit">
+                <span>✓</span> حفظ التعديلات
+              </button>
+              <button id="cancelEditOrder2" class="button button-white" type="button">إلغاء</button>
+            </div>
+          </form>
         </dialog>
-        <dialog id="messageDialog" class="message-dialog" aria-labelledby="messageDialogTitle"><form method="dialog" class="message-dialog-form"><div class="order-edit-heading"><div><p class="section-eyebrow">تواصل مع الزبائن</p><h2 id="messageDialogTitle">قوالب الرسائل</h2><p>انسخ رسالة جاهزة وعدّلها قبل إرسالها.</p></div><button class="button small" value="close" aria-label="إغلاق">إغلاق</button></div><label>نوع الرسالة<select id="messageTemplateSelect"><option value="confirm">تأكيد الطلب</option><option value="delivery">تأكيد عنوان التوصيل</option><option value="followup">متابعة طلب جديد</option></select></label><label>نص الرسالة<textarea id="messageTemplateText" rows="5"></textarea></label><div class="message-dialog-actions"><button id="copyMessageTemplate" type="button" class="button">نسخ الرسالة</button><span id="messageCopyStatus" role="status"></span></div></form></dialog>
+
+        <!-- DIALOG 2: MESSAGE TEMPLATES (قوالب الرسائل) -->
+        <dialog id="messageDialog" class="figma-modal templates-modal" aria-labelledby="messageDialogTitle">
+          <form method="dialog" class="modal-form-wrap">
+            <div class="modal-header">
+              <button class="modal-close-circle" value="close" aria-label="إغلاق">×</button>
+              <div>
+                <h2 id="messageDialogTitle">قوالب الرسائل</h2>
+                <p class="modal-sub">رسائل جاهزة للتواصل السريع مع العميل، بلمستك الخاصة.</p>
+              </div>
+            </div>
+
+            <!-- Customer Summary in Modal -->
+            <div id="templateCustomerBanner" class="modal-order-summary-box">
+              <div class="summary-box-info">
+                <div class="summary-box-icon">👤</div>
+                <div>
+                  <strong id="tplCustomerName">عميل بسكريا للتوابل</strong>
+                  <small id="tplCustomerDetails">الجزائر · الدفع عند الاستلام</small>
+                </div>
+              </div>
+              <span id="tplCustomerPhone" dir="ltr" class="tpl-phone-pill">0550 00 00 00</span>
+            </div>
+
+            <!-- Tab Switcher (WhatsApp / SMS) -->
+            <div class="tpl-tab-toggle" role="tablist">
+              <button id="tabTplWhatsapp" type="button" class="tpl-toggle-btn is-active">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+                <span>واتساب</span>
+              </button>
+              <button id="tabTplSms" type="button" class="tpl-toggle-btn">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+                <span>رسالة نصية SMS</span>
+              </button>
+            </div>
+
+            <!-- Template Type Select -->
+            <label class="modal-field full-width">
+              <span>نوع الرسالة</span>
+              <select id="messageTemplateSelect">
+                <option value="confirm">تأكيد استلام الطلب</option>
+                <option value="delivery">تأكيد عنوان التوصيل</option>
+                <option value="followup">متابعة طلب معلق</option>
+              </select>
+            </label>
+
+            <!-- Message Preview Textarea -->
+            <label class="modal-field full-width">
+              <span>نص الرسالة (قابل للتعديل قبل الإرسال)</span>
+              <textarea id="messageTemplateText" rows="6" class="tpl-textarea"></textarea>
+            </label>
+
+            <div class="tpl-actions-row">
+              <a id="openWhatsappAction" href="#" target="_blank" rel="noopener noreferrer" class="button button-gold">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+                <span>فتح واتساب</span>
+              </a>
+              <button id="copyMessageTemplate" type="button" class="button button-white">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                <span>نسخ الرسالة</span>
+              </button>
+              <span id="messageCopyStatus" role="status" class="tpl-copy-status"></span>
+            </div>
+
+            <div class="modal-footer">
+              <button class="button button-white" value="close" type="submit">إغلاق</button>
+            </div>
+          </form>
+        </dialog>
       </div>
     </section>
   </main>
+
 </body>
 </html>

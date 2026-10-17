@@ -1,17 +1,32 @@
+/**
+ * بسكريا للتوابل · كود لوحة الإدارة الفاخرة
+ * يتصل مباشرة بـ Supabase Edge Function (course-api)
+ * ويدعم التصميم العصري المطابق لـ Figma
+ */
+
 const $ = id => document.getElementById(id);
 const API = 'https://cawroeqwtuxfmaqxuypd.supabase.co/functions/v1/course-api';
+
 let orders = [];
 let activeStatus = 'all';
 let activeView = 'overview';
 let currentPage = 1;
+let currentTemplateOrderId = null;
 let token = sessionStorage.getItem('courseAdminToken') || '';
-const orderStatuses = [['new', 'جديدة'], ['confirmed', 'مؤكدة'], ['rejected', 'مرفوضة']];
+
+const orderStatuses = [
+  ['new', 'جديدة'],
+  ['confirmed', 'مؤكدة'],
+  ['rejected', 'مرفوضة']
+];
+
 const messageTemplates = {
-  confirm: 'السلام عليكم {name}، نؤكد استلام طلبيتك رقم #{id} من بسكريا للتوابل. الكمية: {quantity}. سنتواصل معك لتأكيد التوصيل. شكرًا لثقتك بنا.',
-  delivery: 'السلام عليكم {name}، نرجو تأكيد عنوان التوصيل لطلبيتك رقم #{id}: {address}، ولاية {wilaya}. شكرًا لك.',
-  followup: 'السلام عليكم {name}، نتواصل معك بخصوص طلبيتك رقم #{id} من بسكريا للتوابل. هل ما زلت ترغب في تأكيدها؟'
+  confirm: 'مرحبًا {name} 🌿\nشكرًا لاختيارك بسكريا للتوابل!\nنود تأكيد طلبك #{id}:\nباك نكهات بسكرة × {quantity} — المجموع {price} دج.\nالتوصيل إلى: {address}، ولاية {wilaya}.\nرسوم التوصيل تُؤكّد معك هاتفيًا.\nهل تؤكدين الطلب والعنوان؟ يسعدنا ردّك بكلمة «نؤكد».\nنكهات أصيلة، من قلب بسكرة 💛',
+  delivery: 'السلام عليكم {name}، نرجو تأكيد عنوان التوصيل لطلبيتك رقم #{id}: {address}، ولاية {wilaya}.\nشكرًا لك من بسكريا للتوابل.',
+  followup: 'السلام عليكم {name}، نتواصل معك بخصوص طلبيتك رقم #{id} من بسكريا للتوابل.\nهل ما زلت ترغب في تأكيدها ومتابعة التوصيل؟'
 };
 
+/* API Helper */
 async function api(path, options = {}) {
   const headers = { ...(options.headers || {}) };
   if (token) headers.Authorization = `Bearer ${token}`;
@@ -20,138 +35,318 @@ async function api(path, options = {}) {
   const response = await fetch(url, { ...options, headers });
   const data = await response.json();
   if (!response.ok) {
-    if (response.status === 401) { token = ''; sessionStorage.removeItem('courseAdminToken'); $('dashboard').hidden = true; $('login').hidden = false; $('admin-login-nav').hidden = false; orders = []; $('rows').replaceChildren(); $('ordersMobile').replaceChildren(); }
+    if (response.status === 401) {
+      token = '';
+      sessionStorage.removeItem('courseAdminToken');
+      $('dashboard').hidden = true;
+      $('login').hidden = false;
+      $('admin-login-nav').hidden = false;
+      orders = [];
+      $('rows').replaceChildren();
+      $('ordersMobile').replaceChildren();
+    }
     throw Error(data.error || 'تعذر تنفيذ الطلب.');
   }
   return data;
 }
 
-function addCell(row, label, value, className = '') {
-  const cell = document.createElement('td'); cell.dataset.label = label; cell.textContent = value || '—'; if (className) cell.className = className; row.append(cell);
+/* Helpers */
+function formatPhone(phone) {
+  if (!phone) return '—';
+  const clean = String(phone).replace(/[^\d+]/g, '');
+  if (clean.length === 10 && clean.startsWith('0')) {
+    return `${clean.slice(0, 4)} ${clean.slice(4, 6)} ${clean.slice(6, 8)} ${clean.slice(8)}`;
+  }
+  return clean;
 }
-function dateLabel(value) { const date = new Date(value); return Number.isNaN(date.valueOf()) ? '—' : date.toLocaleString('ar-DZ'); }
-function viewTitle(view) { return ({ overview: 'نظرة عامة', orders: 'الطلبات', settings: 'محتوى الباك' })[view] || 'نظرة عامة'; }
+
+function getInternationalPhone(phone) {
+  const digits = String(phone || '').replace(/\D/g, '');
+  if (!digits) return '';
+  if (digits.startsWith('0')) return `213${digits.slice(1)}`;
+  if (!digits.startsWith('213') && digits.length <= 10) return `213${digits}`;
+  return digits;
+}
+
+function dateLabel(value) {
+  const date = new Date(value);
+  return Number.isNaN(date.valueOf()) ? '—' : date.toLocaleString('ar-DZ', {
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+}
+
+function timeAgo(dateString) {
+  const date = new Date(dateString);
+  if (Number.isNaN(date.valueOf())) return '—';
+  const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
+  if (seconds < 60) return 'الآن';
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `منذ ${minutes} دقيقة`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `منذ ${hours} ساعة`;
+  const days = Math.floor(hours / 24);
+  return `منذ ${days} يوم`;
+}
+
+function getInitials(name) {
+  if (!name) return 'ط';
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) {
+    return `${parts[0][0]} ${parts[1][0]}`;
+  }
+  return parts[0].slice(0, 2);
+}
+
+function viewTitle(view) {
+  return ({ overview: 'نظرة عامة', orders: 'الطلبات', settings: 'محتوى الباك' })[view] || 'نظرة عامة';
+}
+
 function setAdminView(view) {
   activeView = view;
-  document.querySelectorAll('[data-view-panel]').forEach(panel => { panel.hidden = panel.dataset.viewPanel !== view; });
-  document.querySelectorAll('[data-admin-view]').forEach(button => {
+  document.querySelectorAll('[data-view-panel]').forEach(panel => {
+    panel.hidden = panel.dataset.viewPanel !== view;
+  });
+
+  // Desktop sidebar links
+  document.querySelectorAll('.admin-nav-link').forEach(button => {
     const active = button.dataset.adminView === view;
     button.classList.toggle('is-active', active);
-    if (active) button.setAttribute('aria-current', 'page'); else button.removeAttribute('aria-current');
+    if (active) button.setAttribute('aria-current', 'page');
+    else button.removeAttribute('aria-current');
   });
-  $('adminPageTitle').textContent = viewTitle(view);
-  $('pageCrumb').textContent = viewTitle(view);
+
+  // Mobile navigation tabs
+  document.querySelectorAll('.mobile-tab').forEach(tab => {
+    const active = tab.dataset.adminView === view;
+    tab.classList.toggle('is-active', active);
+  });
+
+  if ($('pageCrumb')) $('pageCrumb').textContent = viewTitle(view);
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
+/* Overview Screen Rendering */
 function renderOverview(countByStatus) {
   const total = orders.length;
+  const newCount = countByStatus.new || 0;
+  const confirmedCount = countByStatus.confirmed || 0;
+  const rejectedCount = countByStatus.rejected || 0;
+
+  const confirmedPct = total ? Math.round((confirmedCount / total) * 100) : 0;
+  const rejectedPct = total ? Math.round((rejectedCount / total) * 100) : 0;
+  const newPct = total ? Math.round((newCount / total) * 100) : 0;
+
+  // Stat numbers
   $('statTotal').textContent = total.toLocaleString('ar-DZ');
-  $('statNew').textContent = countByStatus.new.toLocaleString('ar-DZ');
-  $('statConfirmed').textContent = countByStatus.confirmed.toLocaleString('ar-DZ');
-  $('statRejected').textContent = countByStatus.rejected.toLocaleString('ar-DZ');
-  $('overviewNew').textContent = countByStatus.new.toLocaleString('ar-DZ');
-  $('overviewConfirmed').textContent = countByStatus.confirmed.toLocaleString('ar-DZ');
-  $('overviewRejected').textContent = countByStatus.rejected.toLocaleString('ar-DZ');
-  $('sideCount').textContent = total.toLocaleString('ar-DZ');
-  for (const status of ['new', 'confirmed', 'rejected']) {
-    const amount = countByStatus[status];
-    $(`meter${status[0].toUpperCase()}${status.slice(1)}`).style.width = `${total ? Math.round(amount / total * 100) : 0}%`;
-  }
+  $('statNew').textContent = newCount.toLocaleString('ar-DZ');
+  $('statConfirmed').textContent = confirmedCount.toLocaleString('ar-DZ');
+  $('statRejected').textContent = rejectedCount.toLocaleString('ar-DZ');
+
+  if ($('bannerNewCount')) $('bannerNewCount').textContent = newCount.toLocaleString('ar-DZ');
+  if ($('statConfirmedPct')) $('statConfirmedPct').textContent = `${confirmedPct}%`;
+  if ($('statRejectedPct')) $('statRejectedPct').textContent = `${rejectedPct}%`;
+
+  // Overview distribution meters
+  $('overviewNew').textContent = newCount.toLocaleString('ar-DZ');
+  $('overviewConfirmed').textContent = confirmedCount.toLocaleString('ar-DZ');
+  $('overviewRejected').textContent = rejectedCount.toLocaleString('ar-DZ');
+
+  if ($('overviewNewPct')) $('overviewNewPct').textContent = `${newPct}%`;
+  if ($('overviewConfirmedPct')) $('overviewConfirmedPct').textContent = `${confirmedPct}%`;
+  if ($('overviewRejectedPct')) $('overviewRejectedPct').textContent = `${rejectedPct}%`;
+
+  if ($('meterSubtitle')) $('meterSubtitle').textContent = `${total.toLocaleString('ar-DZ')} طلبًا · منذ إطلاق الباك`;
+
+  // Dynamic success ratio (e.g., 7 من كل 10)
+  const ratio = total ? Math.round((confirmedCount / total) * 10) : 7;
+  if ($('meterInsightText')) $('meterInsightText').textContent = `${ratio} من كل 10 طلبات تم تأكيدها بنجاح.`;
+
+  $('meterNew').style.width = `${newPct}%`;
+  $('meterConfirmed').style.width = `${confirmedPct}%`;
+  $('meterRejected').style.width = `${rejectedPct}%`;
+
+  // Navigation badge counts
+  if ($('sideCount')) $('sideCount').textContent = newCount.toLocaleString('ar-DZ');
+  if ($('mobileSideCount')) $('mobileSideCount').textContent = newCount.toLocaleString('ar-DZ');
+
+  // Recent Orders Feed (up to 4 items)
   const recent = [...orders].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 4);
   const list = $('recentOrders');
   if (!recent.length) {
-    const empty = document.createElement('p'); empty.className = 'recent-empty'; empty.textContent = 'ستظهر هنا أحدث الطلبات عند وصولها.'; list.replaceChildren(empty); return;
+    const empty = document.createElement('p');
+    empty.className = 'recent-empty';
+    empty.textContent = 'ستظهر هنا أحدث الطلبات عند وصولها.';
+    list.replaceChildren(empty);
+    return;
   }
+
   const fragment = document.createDocumentFragment();
   for (const order of recent) {
-    const item = document.createElement('div'); item.className = 'recent-order';
-    const icon = document.createElement('span'); icon.className = 'recent-avatar'; icon.setAttribute('aria-hidden', 'true'); icon.textContent = (order.fullName || 'ط').trim().slice(0, 1);
-    const copy = document.createElement('span'); copy.className = 'recent-copy';
-    const name = document.createElement('strong'); name.textContent = order.fullName || `الطلب #${order.id}`;
-    const meta = document.createElement('small'); meta.textContent = `#${order.id} · ${dateLabel(order.createdAt)}`; copy.append(name, meta);
-    const status = document.createElement('span'); status.className = `recent-status status-${order.status || 'new'}`; status.textContent = orderStatuses.find(item => item[0] === (order.status || 'new'))?.[1] || 'جديدة';
-    item.append(icon, copy, status); fragment.append(item);
+    const item = document.createElement('div');
+    item.className = 'recent-order-item';
+
+    const avatar = document.createElement('div');
+    avatar.className = 'recent-initial-avatar';
+    avatar.textContent = getInitials(order.fullName);
+
+    const info = document.createElement('div');
+    info.className = 'recent-order-info';
+    const name = document.createElement('strong');
+    name.textContent = order.fullName || `الطلب #${order.id}`;
+    const meta = document.createElement('small');
+    meta.textContent = `#${order.id} · ${order.wilaya || 'غير محدد'} · ${dateLabel(order.createdAt)}`;
+    info.append(name, meta);
+
+    const statusCol = document.createElement('div');
+    statusCol.className = 'recent-order-meta';
+    const statusPill = document.createElement('span');
+    const stKey = order.status || 'new';
+    statusPill.className = `order-status-pill status-${stKey}`;
+    statusPill.textContent = `• ${orderStatuses.find(item => item[0] === stKey)?.[1] || 'جديدة'}`;
+
+    const timeAgoText = document.createElement('span');
+    timeAgoText.className = 'recent-time-ago';
+    timeAgoText.textContent = timeAgo(order.createdAt);
+    statusCol.append(statusPill, timeAgoText);
+
+    item.append(avatar, info, statusCol);
+    fragment.append(item);
   }
   list.replaceChildren(fragment);
 }
 
-function makeStatusControl(order) {
-  const control = document.createElement('div'); control.className = 'order-status-control';
-  const select = document.createElement('select'); select.setAttribute('aria-label', `حالة الطلب رقم ${order.id}`);
-  for (const [value, text] of orderStatuses) { const option = document.createElement('option'); option.value = value; option.textContent = text; select.append(option); }
+/* Inline Table Status Selector */
+function makeStatusSelector(order) {
+  const select = document.createElement('select');
+  select.className = `inline-status-select status-${order.status || 'new'}`;
+  select.setAttribute('aria-label', `حالة الطلب رقم ${order.id}`);
+
+  for (const [val, label] of orderStatuses) {
+    const opt = document.createElement('option');
+    opt.value = val;
+    opt.textContent = `• ${label}`;
+    select.append(opt);
+  }
   select.value = order.status || 'new';
+
   select.addEventListener('change', async () => {
-    const previous = order.status || 'new', next = select.value;
+    const previous = order.status || 'new';
+    const next = select.value;
     select.disabled = true;
     try {
-      await api('order-status', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ orderId: order.id, status: next }) });
-      order.status = next; renderOrders(); $('adminStatus').textContent = `تم تحديث حالة الطلب #${order.id} إلى «${orderStatuses.find(item => item[0] === next)[1]}».`;
-    } catch (error) { select.value = previous; $('adminStatus').textContent = error.message; }
-    finally { select.disabled = false; }
+      await api('order-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId: order.id, status: next })
+      });
+      order.status = next;
+      select.className = `inline-status-select status-${next}`;
+      renderOrders();
+      $('adminStatus').textContent = `تم تحديث حالة الطلب #${order.id} إلى «${orderStatuses.find(item => item[0] === next)[1]}».`;
+    } catch (error) {
+      select.value = previous;
+      select.className = `inline-status-select status-${previous}`;
+      $('adminStatus').textContent = error.message;
+    } finally {
+      select.disabled = false;
+    }
   });
-  control.append(select); return control;
+
+  return select;
 }
 
-function makeDeleteButton(order) {
-  const button = document.createElement('button'); button.type = 'button'; button.className = 'delete-order'; button.textContent = 'حذف الطلب'; button.setAttribute('aria-label', `حذف الطلب رقم ${order.id}`);
-  button.addEventListener('click', async () => {
-    if (!window.confirm(`هل تريد حذف الطلب #${order.id} نهائيًا؟ لا يمكن التراجع عن هذا الحذف.`)) return;
-    button.disabled = true;
-    try {
-      await api('order-delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ orderId: order.id }) });
-      orders = orders.filter(item => item.id !== order.id); renderOrders(); $('adminStatus').textContent = `تم حذف الطلب #${order.id} نهائيًا.`;
-    } catch (error) { button.disabled = false; $('adminStatus').textContent = error.message; }
-  });
-  return button;
-}
+/* Edit Dialog Opener */
+function openEditDialog(order) {
+  const form = $('editOrderForm');
+  form.elements.orderId.value = order.id;
+  form.elements.fullName.value = order.fullName || '';
+  form.elements.phone.value = order.phone || '';
+  form.elements.address.value = order.address || '';
+  form.elements.quantity.value = order.quantity || 1;
+  form.elements.notes.value = order.notes || '';
+  form.elements.status.value = order.status || 'new';
 
-function makeEditButton(order) {
-  const button = document.createElement('button'); button.type = 'button'; button.className = 'edit-order'; button.textContent = 'تعديل'; button.setAttribute('aria-label', `تعديل بيانات الطلب رقم ${order.id}`);
-  button.addEventListener('click', () => {
-    const form = $('editOrderForm');
-    form.elements.orderId.value = order.id;
-    form.elements.fullName.value = order.fullName || '';
-    form.elements.phone.value = order.phone || '';
-    form.elements.wilaya.value = order.wilaya || '';
-    form.elements.address.value = order.address || '';
-    form.elements.quantity.value = order.quantity || 1;
-    form.elements.notes.value = order.notes || '';
-    form.elements.status.value = order.status || 'new';
-    $('editOrderNumber').textContent = `الطلب #${order.id}`;
-    $('editOrderDialog').showModal();
-  });
-  return button;
-}
-
-function makeOrderActions(order) {
-  const actions = document.createElement('div'); actions.className = 'order-actions';
-  const phone = String(order.phone || '').replace(/[^\d+]/g, '');
-  const digits = phone.replace(/\D/g, '');
-  if (digits) {
-    const call = document.createElement('a'); call.className = 'contact-order call-order'; call.href = `tel:${phone}`; call.setAttribute('aria-label', `اتصال بالزبون صاحب الطلب ${order.id}`); call.title = 'اتصال'; call.textContent = '☎';
-    let international = digits;
-    if (international.startsWith('0')) international = `213${international.slice(1)}`;
-    else if (!international.startsWith('213') && international.length <= 10) international = `213${international}`;
-    const text = `السلام عليكم ${order.fullName || ''}، نؤكد استلام طلبيتك رقم #${order.id} من بسكريا للتوابل. الكمية: ${order.quantity || 1}.`;
-    const whatsapp = document.createElement('a'); whatsapp.className = 'contact-order whatsapp-order'; whatsapp.href = `https://wa.me/${international}?text=${encodeURIComponent(text)}`; whatsapp.target = '_blank'; whatsapp.rel = 'noopener noreferrer'; whatsapp.setAttribute('aria-label', `فتح واتساب للطلب ${order.id}`); whatsapp.title = 'واتساب'; whatsapp.textContent = '◉';
-    actions.append(whatsapp, call);
+  if ($('modalWilayaSelect')) {
+    $('modalWilayaSelect').value = order.wilaya || '';
   }
-  actions.append(makeEditButton(order), makeDeleteButton(order));
-  return actions;
+
+  $('editOrderNumber').textContent = `الطلب #${order.id} · راجع بيانات العميل قبل التأكيد.`;
+  if ($('modalSummaryTitle')) $('modalSummaryTitle').textContent = `باك نكهات بسكرة × ${order.quantity || 1}`;
+  if ($('modalSummaryStatus')) {
+    const st = order.status || 'new';
+    $('modalSummaryStatus').className = `order-status-pill status-${st}`;
+    $('modalSummaryStatus').textContent = `• ${orderStatuses.find(item => item[0] === st)?.[1] || 'جديدة'}`;
+  }
+
+  $('editOrderDialog').showModal();
 }
 
+/* Message Templates Modal Opener */
+function openMessageTemplates(order = null) {
+  const activeOrder = order || orders[0] || {
+    id: '1024',
+    fullName: 'العميل',
+    phone: '0550 00 00 00',
+    wilaya: 'الجزائر',
+    address: 'حي النصر',
+    quantity: 1
+  };
+
+  currentTemplateOrderId = activeOrder.id;
+
+  if ($('tplCustomerName')) $('tplCustomerName').textContent = activeOrder.fullName || `طلب #${activeOrder.id}`;
+  if ($('tplCustomerPhone')) $('tplCustomerPhone').textContent = formatPhone(activeOrder.phone);
+  if ($('tplCustomerDetails')) $('tplCustomerDetails').textContent = `${activeOrder.wilaya || 'الجزائر'} · ${activeOrder.quantity || 1} باك · الدفع عند الاستلام`;
+
+  updateTemplateText(activeOrder);
+  $('messageDialog').showModal();
+}
+
+function updateTemplateText(order) {
+  const tplKey = $('messageTemplateSelect').value || 'confirm';
+  let text = messageTemplates[tplKey] || messageTemplates.confirm;
+
+  const packPriceStr = $('settingsPriceInput')?.value?.replace(/[^\d]/g, '') || '15000';
+  const packPrice = Number(packPriceStr) || 15000;
+  const qty = Number(order.quantity) || 1;
+  const totalPrice = (packPrice * qty).toLocaleString('ar-DZ');
+
+  text = text
+    .replace('{name}', order.fullName || 'العميل')
+    .replace('{id}', order.id || '')
+    .replace('{quantity}', qty)
+    .replace('{price}', totalPrice)
+    .replace('{address}', order.address || 'العنوان المسجل')
+    .replace('{wilaya}', order.wilaya || '');
+
+  $('messageTemplateText').value = text;
+
+  // Update WhatsApp link
+  const intPhone = getInternationalPhone(order.phone);
+  const waUrl = intPhone ? `https://wa.me/${intPhone}?text=${encodeURIComponent(text)}` : '#';
+  $('openWhatsappAction').href = waUrl;
+}
+
+/* Orders List Filtering & Pagination */
 function getVisibleOrders() {
   const query = $('search').value.trim().toLocaleLowerCase('ar');
-  const from = $('dateFrom').value, to = $('dateTo').value;
+  const from = $('dateFrom').value;
+  const to = $('dateTo').value;
+  const selectedWilaya = $('filterWilaya').value;
+
   const visible = orders.filter(order => {
     const parsedDate = new Date(order.createdAt);
     const orderDate = Number.isNaN(parsedDate.valueOf()) ? '' : parsedDate.toISOString().slice(0, 10);
     return (activeStatus === 'all' || (order.status || 'new') === activeStatus)
-      && (!from || orderDate >= from) && (!to || orderDate <= to)
-      && (!$('filterWilaya').value || order.wilaya === $('filterWilaya').value)
+      && (!from || orderDate >= from)
+      && (!to || orderDate <= to)
+      && (!selectedWilaya || order.wilaya === selectedWilaya)
       && Object.values(order).some(value => String(value ?? '').toLocaleLowerCase('ar').includes(query));
   });
+
   return visible.sort((a, b) => {
     if ($('sortOrders').value === 'oldest') return new Date(a.createdAt) - new Date(b.createdAt);
     if ($('sortOrders').value === 'quantity') return (Number(b.quantity) || 0) - (Number(a.quantity) || 0);
@@ -159,92 +354,388 @@ function getVisibleOrders() {
   });
 }
 
-function renderWilayaOptions() {
-  const select = $('filterWilaya'), previous = select.value;
-  const wilayas = [...new Set(orders.map(order => String(order.wilaya || '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'ar'));
-  select.replaceChildren(new Option('كل الولايات', ''), ...wilayas.map(wilaya => new Option(wilaya, wilaya)));
-  select.value = wilayas.includes(previous) ? previous : '';
+function populateWilayas() {
+  const wilayaList = window.ELB_DZ ? window.ELB_DZ.map(w => w[1]) : [];
+  const existingInOrders = [...new Set(orders.map(o => String(o.wilaya || '').trim()).filter(Boolean))];
+  const combined = [...new Set([...wilayaList, ...existingInOrders])].sort((a, b) => a.localeCompare(b, 'ar'));
+
+  // Populate Filter select
+  const filterSelect = $('filterWilaya');
+  const currentFilterVal = filterSelect.value;
+  filterSelect.replaceChildren(new Option('كل الولايات', ''));
+  for (const w of combined) {
+    filterSelect.append(new Option(w, w));
+  }
+  filterSelect.value = combined.includes(currentFilterVal) ? currentFilterVal : '';
+
+  // Populate Modal select
+  const modalSelect = $('modalWilayaSelect');
+  if (modalSelect) {
+    const currentModalVal = modalSelect.value;
+    modalSelect.replaceChildren(new Option('اختر الولاية...', ''));
+    for (const w of combined) {
+      modalSelect.append(new Option(w, w));
+    }
+    modalSelect.value = combined.includes(currentModalVal) ? currentModalVal : '';
+  }
 }
 
 function renderOrders() {
-  const countByStatus = Object.fromEntries(orderStatuses.map(([status]) => [status, orders.filter(order => (order.status || 'new') === status).length]));
-  $('countNew').textContent = countByStatus.new; $('countConfirmed').textContent = countByStatus.confirmed; $('countRejected').textContent = countByStatus.rejected; $('countAll').textContent = orders.length;
+  const countByStatus = Object.fromEntries(
+    orderStatuses.map(([status]) => [status, orders.filter(order => (order.status || 'new') === status).length])
+  );
+
+  $('countNew').textContent = countByStatus.new || 0;
+  $('countConfirmed').textContent = countByStatus.confirmed || 0;
+  $('countRejected').textContent = countByStatus.rejected || 0;
+  $('countAll').textContent = orders.length;
+
+  if ($('ordersCountBadge')) $('ordersCountBadge').textContent = orders.length.toLocaleString('ar-DZ');
+
   renderOverview(countByStatus);
-  renderWilayaOptions();
+
   const sorted = getVisibleOrders();
   const pageSizeValue = $('pageSize').value;
   const pageSize = pageSizeValue === 'all' ? Math.max(sorted.length, 1) : Number(pageSizeValue) || 25;
   const pageCount = Math.max(1, Math.ceil(sorted.length / pageSize));
   currentPage = Math.min(Math.max(currentPage, 1), pageCount);
   const pageOrders = sorted.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
   const query = $('search').value.trim();
-  $('count').textContent = `${sorted.length.toLocaleString('ar-DZ')} من ${orders.length.toLocaleString('ar-DZ')} طلب`;
+  $('count').textContent = `عرض ${pageOrders.length.toLocaleString('ar-DZ')} من أصل ${sorted.length.toLocaleString('ar-DZ')} طلبًا`;
   $('clearSearch').hidden = !query;
-  document.querySelectorAll('.status-filter').forEach(button => { const active = button.dataset.status === activeStatus; button.classList.toggle('is-active', active); button.setAttribute('aria-pressed', String(active)); });
-  const rows = document.createDocumentFragment(), cards = document.createDocumentFragment();
+
+  // Active status tabs
+  document.querySelectorAll('.status-tab').forEach(tab => {
+    const active = tab.dataset.status === activeStatus;
+    tab.classList.toggle('is-active', active);
+    tab.setAttribute('aria-pressed', String(active));
+  });
+
+  const desktopRows = document.createDocumentFragment();
+  const mobileCards = document.createDocumentFragment();
+
   if (!pageOrders.length) {
-    const row = document.createElement('tr'), cell = document.createElement('td'); cell.colSpan = 10; cell.className = 'empty-orders'; cell.textContent = orders.length ? 'لا توجد طلبات في هذا القسم تطابق البحث.' : 'لم يصل أي طلب بعد. ستظهر الطلبات الجديدة هنا.'; row.append(cell); rows.append(row);
-    const empty = document.createElement('div'); empty.className = 'order-card empty-orders'; empty.textContent = cell.textContent; cards.append(empty);
-  } else for (const order of pageOrders) {
-    const row = document.createElement('tr');
-    addCell(row, 'رقم', `#${order.id}`); addCell(row, 'الاسم الكامل', order.fullName); addCell(row, 'الهاتف', order.phone, 'ltr'); addCell(row, 'الولاية', order.wilaya); addCell(row, 'عنوان التوصيل', order.address); addCell(row, 'الكمية', String(order.quantity)); addCell(row, 'ملاحظة', order.notes); const statusCell = document.createElement('td'); statusCell.dataset.label = 'الحالة'; statusCell.append(makeStatusControl(order)); row.append(statusCell); addCell(row, 'وقت الطلب', dateLabel(order.createdAt)); const actionCell = document.createElement('td'); actionCell.dataset.label = 'إجراء'; actionCell.append(makeOrderActions(order)); row.append(actionCell); rows.append(row);
-    const card = document.createElement('article'); card.className = 'order-card';
-    const head = document.createElement('div'); head.className = 'order-card-head';
-    const name = document.createElement('strong'); name.textContent = order.fullName || 'طلب جديد';
-    const id = document.createElement('span'); id.textContent = `#${order.id} · ${dateLabel(order.createdAt)}`; head.append(name, id);
-    const details = document.createElement('dl');
-    for (const [label, value, className] of [['الهاتف',order.phone,'ltr'],['الولاية',order.wilaya,''],['عنوان التوصيل',order.address,'order-address'],['الكمية',String(order.quantity),''],['ملاحظة',order.notes,'order-notes']]) {
-      const item = document.createElement('div'); if (className) item.className = className;
-      const term = document.createElement('dt'); term.textContent = label; const description = document.createElement('dd'); description.textContent = value || '—'; if (className === 'ltr') description.dir = 'ltr'; item.append(term, description); details.append(item);
+    const emptyRow = document.createElement('tr');
+    const emptyCell = document.createElement('td');
+    emptyCell.colSpan = 10;
+    emptyCell.style.textAlign = 'center';
+    emptyCell.style.padding = '40px 20px';
+    emptyCell.style.color = 'var(--c-text-muted)';
+    emptyCell.textContent = orders.length ? 'لا توجد طلبات تطابق معايير البحث الحالية.' : 'لم يصل أي طلب بعد. ستظهر طلبات المتجر هنا فور تسجيلها.';
+    emptyRow.append(emptyCell);
+    desktopRows.append(emptyRow);
+
+    const emptyCard = document.createElement('div');
+    emptyCard.className = 'figma-mobile-order-card';
+    emptyCard.style.textAlign = 'center';
+    emptyCard.style.color = 'var(--c-text-muted)';
+    emptyCard.textContent = emptyCell.textContent;
+    mobileCards.append(emptyCard);
+  } else {
+    for (const order of pageOrders) {
+      // 1. Desktop Row
+      const row = document.createElement('tr');
+
+      // #ID
+      const idTd = document.createElement('td');
+      idTd.className = 'order-id-cell';
+      idTd.textContent = `#${order.id}`;
+      row.append(idTd);
+
+      // Name
+      const nameTd = document.createElement('td');
+      nameTd.className = 'order-name-cell';
+      nameTd.textContent = order.fullName || '—';
+      row.append(nameTd);
+
+      // Phone + Quick Actions
+      const phoneTd = document.createElement('td');
+      const phoneWrap = document.createElement('div');
+      phoneWrap.className = 'phone-action-cell';
+
+      const intPhone = getInternationalPhone(order.phone);
+      if (intPhone) {
+        const waLink = document.createElement('a');
+        waLink.className = 'phone-icon-btn btn-whatsapp';
+        const defaultText = `السلام عليكم ${order.fullName || ''}، نؤكد استلام طلبيتك رقم #${order.id} من بسكريا للتوابل.`;
+        waLink.href = `https://wa.me/${intPhone}?text=${encodeURIComponent(defaultText)}`;
+        waLink.target = '_blank';
+        waLink.rel = 'noopener noreferrer';
+        waLink.title = 'واتساب مباشر';
+        waLink.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0 0 12.04 2z"/></svg>`;
+        phoneWrap.append(waLink);
+
+        const callLink = document.createElement('a');
+        callLink.className = 'phone-icon-btn btn-call';
+        callLink.href = `tel:${order.phone}`;
+        callLink.title = 'اتصال هاتفي';
+        callLink.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>`;
+        phoneWrap.append(callLink);
+      }
+
+      const phoneSpan = document.createElement('span');
+      phoneSpan.className = 'phone-number-text';
+      phoneSpan.textContent = formatPhone(order.phone);
+      phoneWrap.append(phoneSpan);
+      phoneTd.append(phoneWrap);
+      row.append(phoneTd);
+
+      // Wilaya
+      const wilayaTd = document.createElement('td');
+      wilayaTd.textContent = order.wilaya || '—';
+      row.append(wilayaTd);
+
+      // Address
+      const addressTd = document.createElement('td');
+      addressTd.textContent = order.address || '—';
+      row.append(addressTd);
+
+      // Quantity
+      const qtyTd = document.createElement('td');
+      qtyTd.style.fontWeight = '800';
+      qtyTd.textContent = String(order.quantity || 1);
+      row.append(qtyTd);
+
+      // Notes
+      const notesTd = document.createElement('td');
+      notesTd.textContent = order.notes || '—';
+      row.append(notesTd);
+
+      // Status
+      const statusTd = document.createElement('td');
+      statusTd.append(makeStatusSelector(order));
+      row.append(statusTd);
+
+      // Time
+      const timeTd = document.createElement('td');
+      timeTd.innerHTML = `<div>${dateLabel(order.createdAt)}</div><small style="color:var(--c-text-muted)">${timeAgo(order.createdAt)}</small>`;
+      row.append(timeTd);
+
+      // Actions (Edit & Delete)
+      const actionsTd = document.createElement('td');
+      const actionsWrap = document.createElement('div');
+      actionsWrap.className = 'table-actions-cell';
+
+      const editBtn = document.createElement('button');
+      editBtn.type = 'button';
+      editBtn.className = 'row-action-btn';
+      editBtn.title = 'تعديل بيانات الطلب';
+      editBtn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
+      editBtn.addEventListener('click', () => openEditDialog(order));
+
+      const delBtn = document.createElement('button');
+      delBtn.type = 'button';
+      delBtn.className = 'row-action-btn btn-delete';
+      delBtn.title = 'حذف الطلب';
+      delBtn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>`;
+      delBtn.addEventListener('click', async () => {
+        if (!window.confirm(`هل أنت متأكد من حذف الطلب #${order.id} نهائيًا؟`)) return;
+        delBtn.disabled = true;
+        try {
+          await api('order-delete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ orderId: order.id })
+          });
+          orders = orders.filter(item => item.id !== order.id);
+          renderOrders();
+          $('adminStatus').textContent = `تم حذف الطلب #${order.id} بنجاح.`;
+        } catch (err) {
+          delBtn.disabled = false;
+          $('adminStatus').textContent = err.message;
+        }
+      });
+
+      actionsWrap.append(editBtn, delBtn);
+      actionsTd.append(actionsWrap);
+      row.append(actionsTd);
+
+      desktopRows.append(row);
+
+      // 2. Mobile Card (Matching Figma Mobile Design)
+      const card = document.createElement('article');
+      card.className = 'figma-mobile-order-card';
+
+      const cardTop = document.createElement('div');
+      cardTop.className = 'mobile-card-top';
+      const cardId = document.createElement('span');
+      cardId.className = 'mobile-order-id';
+      cardId.textContent = `#${order.id}`;
+      cardTop.append(cardId, makeStatusSelector(order));
+
+      const cardCustomer = document.createElement('div');
+      const custName = document.createElement('h3');
+      custName.className = 'mobile-customer-name';
+      custName.textContent = order.fullName || 'طلب جديد';
+      const custPhone = document.createElement('div');
+      custPhone.className = 'mobile-customer-phone';
+      custPhone.textContent = formatPhone(order.phone);
+      cardCustomer.append(custName, custPhone);
+
+      // Quick Action Buttons
+      const quickActions = document.createElement('div');
+      quickActions.className = 'mobile-quick-actions';
+
+      const mCall = document.createElement('a');
+      mCall.className = 'mobile-action-btn';
+      mCall.href = `tel:${order.phone}`;
+      mCall.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg><span>اتصال</span>`;
+
+      const mWa = document.createElement('a');
+      mWa.className = 'mobile-action-btn btn-wa';
+      const defaultWaText = `السلام عليكم ${order.fullName || ''}، نؤكد استلام طلبيتك رقم #${order.id} من بسكريا للتوابل.`;
+      mWa.href = intPhone ? `https://wa.me/${intPhone}?text=${encodeURIComponent(defaultWaText)}` : '#';
+      mWa.target = '_blank';
+      mWa.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0 0 12.04 2z"/></svg><span>واتساب</span>`;
+      quickActions.append(mCall, mWa);
+
+      // Details Box
+      const detailsBox = document.createElement('div');
+      detailsBox.className = 'mobile-order-details-box';
+      detailsBox.innerHTML = `
+        <div class="mobile-detail-row"><span>الولاية:</span><strong>${order.wilaya || '—'}</strong></div>
+        <div class="mobile-detail-row"><span>عنوان التوصيل:</span><strong>${order.address || '—'}</strong></div>
+        <div class="mobile-detail-row"><span>الكمية:</span><strong>${order.quantity || 1} باك</strong></div>
+        <div class="mobile-detail-row"><span>ملاحظات:</span><strong>${order.notes || 'دون ملاحظات'}</strong></div>
+        <div class="mobile-detail-row"><span>وقت الطلب:</span><small>${dateLabel(order.createdAt)} (${timeAgo(order.createdAt)})</small></div>
+      `;
+
+      // Foot Edit / Delete
+      const footActions = document.createElement('div');
+      footActions.className = 'mobile-card-foot-actions';
+
+      const mEdit = document.createElement('button');
+      mEdit.type = 'button';
+      mEdit.className = 'button button-white';
+      mEdit.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg><span>تعديل الطلب</span>`;
+      mEdit.addEventListener('click', () => openEditDialog(order));
+
+      const mDel = document.createElement('button');
+      mDel.type = 'button';
+      mDel.className = 'button button-white';
+      mDel.style.color = 'var(--status-rejected-text)';
+      mDel.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg><span>حذف</span>`;
+      mDel.addEventListener('click', async () => {
+        if (!window.confirm(`هل أنت متأكد من حذف الطلب #${order.id} نهائيًا؟`)) return;
+        mDel.disabled = true;
+        try {
+          await api('order-delete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ orderId: order.id })
+          });
+          orders = orders.filter(item => item.id !== order.id);
+          renderOrders();
+        } catch (err) {
+          mDel.disabled = false;
+          alert(err.message);
+        }
+      });
+
+      footActions.append(mEdit, mDel);
+      card.append(cardTop, cardCustomer, quickActions, detailsBox, footActions);
+      mobileCards.append(card);
     }
-    card.append(head, details, makeStatusControl(order), makeOrderActions(order)); cards.append(card);
   }
-  $('rows').replaceChildren(rows); $('ordersMobile').replaceChildren(cards);
+
+  $('rows').replaceChildren(desktopRows);
+  $('ordersMobile').replaceChildren(mobileCards);
+
+  // Pagination updates
   $('pageIndicator').textContent = `${currentPage.toLocaleString('ar-DZ')} / ${pageCount.toLocaleString('ar-DZ')}`;
   $('previousPage').disabled = currentPage <= 1;
   $('nextPage').disabled = currentPage >= pageCount;
   $('ordersPagination').hidden = sorted.length <= pageSize;
-  const updated = new Date().toLocaleTimeString('ar-DZ', { hour: '2-digit', minute: '2-digit' });
-  $('lastUpdated').textContent = `آخر تحديث ${updated}`;
-  $('adminStatus').textContent = `يعرض ${pageOrders.length.toLocaleString('ar-DZ')} من ${sorted.length.toLocaleString('ar-DZ')} طلب`;
+
+  const updatedTime = new Date().toLocaleTimeString('ar-DZ', { hour: '2-digit', minute: '2-digit' });
+  if ($('lastUpdated')) $('lastUpdated').textContent = `آخر تحديث ${updatedTime}`;
 }
 
+/* Export Orders to CSV */
 function exportOrders() {
   const columns = [
-    ['رقم الطلب', order => `#${order.id}`], ['الاسم الكامل', order => order.fullName],
-    ['رقم الهاتف', order => order.phone], ['الولاية', order => order.wilaya],
-    ['عنوان التوصيل', order => order.address], ['الكمية', order => order.quantity],
+    ['رقم الطلب', order => `#${order.id}`],
+    ['الاسم الكامل', order => order.fullName],
+    ['رقم الهاتف', order => order.phone],
+    ['الولاية', order => order.wilaya],
+    ['عنوان التوصيل', order => order.address],
+    ['الكمية', order => order.quantity],
     ['ملاحظات', order => order.notes],
     ['الحالة', order => orderStatuses.find(item => item[0] === (order.status || 'new'))?.[1] || 'جديدة'],
     ['وقت الطلب', order => dateLabel(order.createdAt)],
   ];
+
   const csvCell = value => `"${String(value ?? '').replaceAll('"', '""')}"`;
   const selected = getVisibleOrders();
-  const content = '\uFEFF' + [columns.map(([label]) => csvCell(label)).join(','), ...selected.map(order => columns.map(([, value]) => csvCell(value(order))).join(','))].join('\r\n');
-  const url = URL.createObjectURL(new Blob([content], { type: 'text/csv;charset=utf-8' }));
-  const link = document.createElement('a'); link.href = url; link.download = 'طلبيات-بسكريا-للتوابل.csv'; link.click();
+  const content = '\uFEFF' + [
+    columns.map(([label]) => csvCell(label)).join(','),
+    ...selected.map(order => columns.map(([, fn]) => csvCell(fn(order))).join(','))
+  ].join('\r\n');
+
+  const blob = new Blob([content], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `طلبيات-بسكريا-للتوابل-${new Date().toISOString().slice(0, 10)}.csv`;
+  link.click();
   window.setTimeout(() => URL.revokeObjectURL(url), 1000);
-  $('adminStatus').textContent = `تم تجهيز ملف يتضمن ${selected.length.toLocaleString('ar-DZ')} طلب حسب الفلاتر الحالية.`;
+  $('adminStatus').textContent = `تم تصدير ملف Excel يتضمن ${selected.length.toLocaleString('ar-DZ')} طلبًا.`;
 }
 
-async function loadOrders() { orders = await api('orders'); renderOrders(); $('login').hidden = true; $('admin-login-nav').hidden = true; $('dashboard').hidden = false; setAdminView(activeView); }
-
+/* Media Editor Handlers */
 function addMediaEntry(item = {}) {
-  const card = document.createElement('article'); card.className = 'media-editor-card';
-  const top = document.createElement('div'); top.className = 'media-editor-top';
-  const heading = document.createElement('strong'); heading.textContent = 'مقطع جديد';
-  const remove = document.createElement('button'); remove.type = 'button'; remove.className = 'remove-media'; remove.textContent = 'حذف المقطع'; remove.setAttribute('aria-label', 'حذف هذا المقطع'); remove.addEventListener('click', () => card.remove()); top.append(heading, remove);
-  const fields = document.createElement('div'); fields.className = 'media-editor-fields';
-  const typeLabel = document.createElement('label'); typeLabel.textContent = 'نوع المقطع';
-  const type = document.createElement('select'); type.dataset.field = 'kind'; type.setAttribute('aria-label','نوع المقطع');
-  for (const [value, label] of [['video','فيديو'],['audio','مقطع صوتي']]) { const option = document.createElement('option'); option.value = value; option.textContent = label; type.append(option); }
-  type.value = item.kind === 'audio' ? 'audio' : 'video'; typeLabel.append(type);
-  const titleLabel = document.createElement('label'); titleLabel.textContent = 'عنوان المقطع';
-  const title = document.createElement('input'); title.type = 'text'; title.maxLength = 200; title.required = true; title.placeholder = type.value === 'audio' ? 'مثال: طريقة استعمال الخلطة' : 'مثال: تعرّف على الباك'; title.value = item.title || ''; title.dataset.field = 'title'; titleLabel.append(title);
-  type.addEventListener('change', () => { title.placeholder = type.value === 'audio' ? 'مثال: طريقة استعمال الخلطة' : 'مثال: تعرّف على الباك'; url.placeholder = type.value === 'audio' ? 'رابط ملف صوتي أو Google Drive' : 'رابط YouTube أو Google Drive'; });
-  const urlLabel = document.createElement('label'); urlLabel.textContent = 'رابط المقطع';
-  const url = document.createElement('input'); url.type = 'url'; url.inputMode = 'url'; url.dir = 'ltr'; url.required = true; url.placeholder = type.value === 'audio' ? 'رابط ملف صوتي أو Google Drive' : 'رابط YouTube أو Google Drive'; url.value = item.url || ''; url.dataset.field = 'url'; urlLabel.append(url);
-  fields.append(typeLabel, titleLabel, urlLabel); card.append(top, fields); $('mediaEditor').append(card);
+  const card = document.createElement('article');
+  card.className = 'media-editor-card';
+
+  const top = document.createElement('div');
+  top.className = 'media-editor-top';
+  const heading = document.createElement('strong');
+  heading.textContent = item.title || 'مقطع جديد';
+  const remove = document.createElement('button');
+  remove.type = 'button';
+  remove.className = 'remove-media';
+  remove.textContent = 'حذف';
+  remove.addEventListener('click', () => card.remove());
+  top.append(heading, remove);
+
+  const fields = document.createElement('div');
+  fields.className = 'media-editor-fields';
+
+  const typeLabel = document.createElement('label');
+  typeLabel.textContent = 'نوع المقطع';
+  const typeSelect = document.createElement('select');
+  typeSelect.dataset.field = 'kind';
+  typeSelect.append(new Option('فيديو (YouTube / Drive)', 'video'));
+  typeSelect.append(new Option('مقطع صوتي (Audio / Drive)', 'audio'));
+  typeSelect.value = item.kind === 'audio' ? 'audio' : 'video';
+  typeLabel.append(typeSelect);
+
+  const titleLabel = document.createElement('label');
+  titleLabel.textContent = 'عنوان المقطع';
+  const titleInput = document.createElement('input');
+  titleInput.type = 'text';
+  titleInput.maxLength = 200;
+  titleInput.required = true;
+  titleInput.value = item.title || '';
+  titleInput.dataset.field = 'title';
+  titleInput.addEventListener('input', () => { heading.textContent = titleInput.value.trim() || 'مقطع جديد'; });
+  titleLabel.append(titleInput);
+
+  const urlLabel = document.createElement('label');
+  urlLabel.textContent = 'رابط المقطع';
+  const urlInput = document.createElement('input');
+  urlInput.type = 'url';
+  urlInput.inputMode = 'url';
+  urlInput.dir = 'ltr';
+  urlInput.required = true;
+  urlInput.value = item.url || '';
+  urlInput.dataset.field = 'url';
+  urlLabel.append(urlInput);
+
+  fields.append(typeLabel, titleLabel, urlLabel);
+  card.append(top, fields);
+  $('mediaEditor').append(card);
 }
 
 function readMediaEntries() {
@@ -255,100 +746,298 @@ function readMediaEntries() {
   }));
 }
 
+/* Settings Load & Sync */
 async function loadSettings() {
-  const data = await api('settings');
-  const form = $('settingsForm'); form.elements.title.value = data.title || ''; form.elements.description.value = data.description || ''; form.elements.price.value = data.price || ''; form.elements.pixelId.value = '2240942626481684';
-  $('mediaEditor').replaceChildren();
-  for (const item of Array.isArray(data.media) ? data.media : []) addMediaEntry(item);
+  try {
+    const data = await api('settings');
+    const form = $('settingsForm');
+    form.elements.title.value = data.title || 'باك نكهات بسكرة';
+    form.elements.description.value = data.description || '';
+    form.elements.price.value = data.price || '15,000 دج';
+    form.elements.pixelId.value = '2240942626481684';
+
+    syncPackPreview();
+
+    $('mediaEditor').replaceChildren();
+    for (const item of Array.isArray(data.media) ? data.media : []) {
+      addMediaEntry(item);
+    }
+  } catch (e) {
+    console.error('Settings load error:', e);
+  }
 }
 
-$('addMedia').addEventListener('click', () => addMediaEntry());
-$('search').addEventListener('input', renderOrders);
-$('sortOrders').addEventListener('change', renderOrders);
-$('filterWilaya').addEventListener('change', () => { currentPage = 1; renderOrders(); });
-$('pageSize').addEventListener('change', () => { currentPage = 1; renderOrders(); });
-$('dateFrom').addEventListener('change', renderOrders);
-$('dateTo').addEventListener('change', renderOrders);
-$('clearSearch').addEventListener('click', () => { $('search').value = ''; currentPage = 1; renderOrders(); $('search').focus(); });
-$('resetFilters').addEventListener('click', () => { $('search').value = ''; $('dateFrom').value = ''; $('dateTo').value = ''; $('sortOrders').value = 'newest'; $('filterWilaya').value = ''; $('pageSize').value = '25'; activeStatus = 'all'; currentPage = 1; renderOrders(); });
-$('exportOrders').addEventListener('click', exportOrders);
-$('previousPage').addEventListener('click', () => { currentPage -= 1; renderOrders(); });
-$('nextPage').addEventListener('click', () => { currentPage += 1; renderOrders(); });
-$('messageTemplates').addEventListener('click', () => { $('messageTemplateSelect').dispatchEvent(new Event('change')); $('messageDialog').showModal(); });
-$('messageTemplateSelect').addEventListener('change', () => { $('messageTemplateText').value = messageTemplates[$('messageTemplateSelect').value] || ''; $('messageCopyStatus').textContent = ''; });
-$('copyMessageTemplate').addEventListener('click', async () => {
-  try { await navigator.clipboard.writeText($('messageTemplateText').value); $('messageCopyStatus').textContent = 'نُسخت الرسالة.'; }
-  catch { $('messageTemplateText').select(); $('messageCopyStatus').textContent = 'حدّد النص وانسخه يدويًا.'; }
-});
-$('copyStoreLink').addEventListener('click', async () => {
-  try { await navigator.clipboard.writeText('https://tawabil.africacold.fr/'); $('copyStoreLink').textContent = 'تم النسخ ✓'; }
-  catch { $('copyStoreLink').textContent = 'انسخ من الرابط الظاهر'; }
-  window.setTimeout(() => { $('copyStoreLink').textContent = 'نسخ الرابط'; }, 2200);
-});
-$('settingsForm').addEventListener('click', event => {
-  const tab = event.target.closest('[data-settings-tab]');
-  if (!tab) return;
-  const name = tab.dataset.settingsTab;
-  document.querySelectorAll('[data-settings-tab]').forEach(button => { const active = button === tab; button.classList.toggle('is-active', active); button.setAttribute('aria-selected', String(active)); });
-  document.querySelectorAll('[data-settings-panel]').forEach(panel => { panel.hidden = panel.dataset.settingsPanel !== name; });
-});
-$('dashboard').addEventListener('click', event => {
-  const nav = event.target.closest('[data-admin-view]');
-  if (nav) setAdminView(nav.dataset.adminView);
-  const jump = event.target.closest('[data-go-view]');
-  if (jump) { setAdminView(jump.dataset.goView); if (jump.dataset.goView === 'orders') $('search').focus({ preventScroll: true }); }
-});
-$('statusFilters').addEventListener('click', event => { const button = event.target.closest('[data-status]'); if (!button) return; activeStatus = button.dataset.status; currentPage = 1; renderOrders(); });
-$('refresh').addEventListener('click', () => loadOrders().catch(error => { $('adminStatus').textContent = error.message; }));
-$('cancelEditOrder').addEventListener('click', () => $('editOrderDialog').close());
-$('editOrderForm').addEventListener('submit', async event => {
-  event.preventDefault();
-  const form = event.currentTarget, button = form.querySelector('button[type="submit"]');
-  const body = { orderId: Number(form.elements.orderId.value), fullName: form.elements.fullName.value.trim(), phone: form.elements.phone.value.trim(), wilaya: form.elements.wilaya.value.trim(), address: form.elements.address.value.trim(), quantity: Number(form.elements.quantity.value), notes: form.elements.notes.value.trim(), status: form.elements.status.value };
-  button.disabled = true;
-  try {
-    await api('order-update', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-    const order = orders.find(item => item.id === body.orderId);
-    if (order) Object.assign(order, { fullName: body.fullName, phone: body.phone, wilaya: body.wilaya, address: body.address, quantity: body.quantity, notes: body.notes, status: body.status });
-    $('editOrderDialog').close(); renderOrders(); $('adminStatus').textContent = `تم حفظ تعديلات الطلب #${body.orderId}.`;
-  } catch (error) { $('adminStatus').textContent = error.message; }
-  finally { button.disabled = false; }
-});
-$('login').addEventListener('submit', async event => {
-  event.preventDefault();
-  const form = event.currentTarget, button = form.querySelector('button[type="submit"]'); button.disabled = true; $('loginStatus').textContent = '';
-  try {
-    const result = await api('login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: form.elements.password.value }) });
-    token = result.token; sessionStorage.setItem('courseAdminToken', token); form.reset(); await loadOrders(); await loadSettings();
-  } catch (error) { $('loginStatus').textContent = error.message; }
-  finally { button.disabled = false; }
-});
-$('logout').addEventListener('click', async () => {
-  try { await api('logout', { method: 'POST' }); } catch {}
-  token = ''; sessionStorage.removeItem('courseAdminToken'); orders = []; $('rows').replaceChildren(); $('ordersMobile').replaceChildren(); $('dashboard').hidden = true; $('login').hidden = false; $('admin-login-nav').hidden = false;
-});
-$('settingsForm').addEventListener('submit', async event => {
-  event.preventDefault();
-  const form = event.currentTarget, button = form.querySelector('button[type="submit"]'); button.disabled = true; $('settingsStatus').textContent = '';
-  try {
-    const body = { title: form.elements.title.value.trim(), description: form.elements.description.value.trim(), price: form.elements.price.value.trim(), pixelId: form.elements.pixelId.value.trim(), media: readMediaEntries() };
-    if (!body.title || !body.description) {
-      $('settingsStatus').textContent = 'أدخل اسم الباك ووصفه قبل الحفظ.';
-      const missingTab = body.title ? 'content' : 'general';
-      document.querySelector(`[data-settings-tab="${missingTab}"]`).click();
-      form.elements[body.title ? 'description' : 'title'].focus();
-      return;
-    }
-    if (body.pixelId && !/^\d{6,20}$/.test(body.pixelId)) {
-      $('settingsStatus').textContent = 'أدخل معرّف Pixel الرقمي من 6 إلى 20 رقمًا.';
-      document.querySelector('[data-settings-tab="tracking"]').click();
-      form.elements.pixelId.focus();
-      return;
-    }
-    await api('settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-    $('settingsStatus').textContent = 'تم حفظ الإعدادات. بيكسل Meta مدمج تلقائيًا في الموقع.';
-  } catch (error) { $('settingsStatus').textContent = error.message; }
-  finally { button.disabled = false; }
-});
+function syncPackPreview() {
+  const form = $('settingsForm');
+  const title = form.elements.title.value.trim() || 'باك نكهات بسكرة';
+  const price = form.elements.price.value.trim() || '15,000 دج';
 
-if (token) loadOrders().then(loadSettings).catch(() => {});
+  if ($('previewCardTitle')) $('previewCardTitle').textContent = title;
+  if ($('previewCardPrice')) $('previewCardPrice').textContent = price;
+  if ($('overviewPackTitle')) $('overviewPackTitle').textContent = title;
+  if ($('overviewPackPrice')) $('overviewPackPrice').textContent = price;
+}
+
+/* Load Orders */
+async function loadOrders() {
+  orders = await api('orders');
+  populateWilayas();
+  renderOrders();
+  $('login').hidden = true;
+  $('admin-login-nav').hidden = true;
+  $('dashboard').hidden = false;
+  setAdminView(activeView);
+}
+
+/* Event Listeners Initialization */
+function initEvents() {
+  // Navigation
+  document.querySelectorAll('[data-admin-view]').forEach(el => {
+    el.addEventListener('click', () => setAdminView(el.dataset.adminView));
+  });
+
+  document.querySelectorAll('[data-go-view]').forEach(el => {
+    el.addEventListener('click', () => {
+      setAdminView(el.dataset.goView);
+      if (el.dataset.goView === 'orders') $('search').focus({ preventScroll: true });
+    });
+  });
+
+  // Filters & Search
+  $('search').addEventListener('input', renderOrders);
+  $('clearSearch').addEventListener('click', () => {
+    $('search').value = '';
+    currentPage = 1;
+    renderOrders();
+    $('search').focus();
+  });
+
+  $('sortOrders').addEventListener('change', renderOrders);
+  $('filterWilaya').addEventListener('change', () => { currentPage = 1; renderOrders(); });
+  $('pageSize').addEventListener('change', () => { currentPage = 1; renderOrders(); });
+  $('dateFrom').addEventListener('change', renderOrders);
+  $('dateTo').addEventListener('change', renderOrders);
+
+  $('resetFilters').addEventListener('click', () => {
+    $('search').value = '';
+    $('dateFrom').value = '';
+    $('dateTo').value = '';
+    $('sortOrders').value = 'newest';
+    $('filterWilaya').value = '';
+    $('pageSize').value = '25';
+    activeStatus = 'all';
+    currentPage = 1;
+    renderOrders();
+  });
+
+  $('statusFilters').addEventListener('click', event => {
+    const tab = event.target.closest('[data-status]');
+    if (!tab) return;
+    activeStatus = tab.dataset.status;
+    currentPage = 1;
+    renderOrders();
+  });
+
+  // Pagination
+  $('previousPage').addEventListener('click', () => { currentPage -= 1; renderOrders(); });
+  $('nextPage').addEventListener('click', () => { currentPage += 1; renderOrders(); });
+
+  // Topbar actions
+  $('refresh').addEventListener('click', () => {
+    loadOrders().catch(err => { $('adminStatus').textContent = err.message; });
+  });
+
+  $('exportOrders').addEventListener('click', exportOrders);
+
+  // Settings Tabs Switcher
+  $('settingsForm').addEventListener('click', event => {
+    const tab = event.target.closest('[data-settings-tab]');
+    if (!tab) return;
+    const name = tab.dataset.settingsTab;
+    document.querySelectorAll('[data-settings-tab]').forEach(b => {
+      const active = b === tab;
+      b.classList.toggle('is-active', active);
+      b.setAttribute('aria-selected', String(active));
+    });
+    document.querySelectorAll('[data-settings-panel]').forEach(p => {
+      p.hidden = p.dataset.settingsPanel !== name;
+    });
+  });
+
+  $('settingsTitleInput')?.addEventListener('input', syncPackPreview);
+  $('settingsPriceInput')?.addEventListener('input', syncPackPreview);
+
+  $('addMedia').addEventListener('click', () => addMediaEntry());
+
+  // Store Link Copy
+  $('copyStoreLink').addEventListener('click', async () => {
+    const url = 'https://tawabil.africacold.fr/';
+    try {
+      await navigator.clipboard.writeText(url);
+      $('copyStoreLink').querySelector('span').textContent = 'تم النسخ ✓';
+    } catch {
+      $('copyStoreLink').querySelector('span').textContent = 'انسخ الرابط';
+    }
+    window.setTimeout(() => {
+      $('copyStoreLink').querySelector('span').textContent = 'نسخ الرابط';
+    }, 2200);
+  });
+
+  // Settings Form Submit
+  $('settingsForm').addEventListener('submit', async event => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const submitBtn = form.querySelector('.save-submit-btn');
+    submitBtn.disabled = true;
+    $('settingsStatus').textContent = 'جارٍ الحفظ...';
+
+    try {
+      const body = {
+        title: form.elements.title.value.trim(),
+        description: form.elements.description.value.trim(),
+        price: form.elements.price.value.trim(),
+        pixelId: form.elements.pixelId.value.trim(),
+        media: readMediaEntries()
+      };
+
+      if (!body.title) {
+        $('settingsStatus').textContent = 'أدخل اسم الباك قبل الحفظ.';
+        document.querySelector('[data-settings-tab="general"]').click();
+        form.elements.title.focus();
+        return;
+      }
+
+      await api('settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      syncPackPreview();
+      $('settingsStatus').textContent = `تم الحفظ بنجاح (${new Date().toLocaleTimeString('ar-DZ', { hour: '2-digit', minute: '2-digit' })}) ✓`;
+    } catch (error) {
+      $('settingsStatus').textContent = error.message;
+    } finally {
+      submitBtn.disabled = false;
+    }
+  });
+
+  // Edit Order Dialog
+  const closeEditDialog = () => $('editOrderDialog').close();
+  $('cancelEditOrder').addEventListener('click', closeEditDialog);
+  $('cancelEditOrder2').addEventListener('click', closeEditDialog);
+
+  $('editOrderForm').addEventListener('submit', async event => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const button = form.querySelector('button[type="submit"]');
+    const orderId = Number(form.elements.orderId.value);
+    const body = {
+      orderId,
+      fullName: form.elements.fullName.value.trim(),
+      phone: form.elements.phone.value.trim(),
+      wilaya: form.elements.wilaya.value.trim(),
+      address: form.elements.address.value.trim(),
+      quantity: Number(form.elements.quantity.value) || 1,
+      notes: form.elements.notes.value.trim(),
+      status: form.elements.status.value
+    };
+
+    button.disabled = true;
+    try {
+      await api('order-update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      const order = orders.find(item => item.id === orderId);
+      if (order) Object.assign(order, body);
+      $('editOrderDialog').close();
+      renderOrders();
+      $('adminStatus').textContent = `تم تحديث بيانات الطلب #${orderId} بنجاح.`;
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      button.disabled = false;
+    }
+  });
+
+  // Message Templates Dialog
+  $('messageTemplates').addEventListener('click', () => {
+    openMessageTemplates();
+  });
+
+  $('messageTemplateSelect').addEventListener('change', () => {
+    const order = orders.find(o => o.id === currentTemplateOrderId) || orders[0] || {};
+    updateTemplateText(order);
+    $('messageCopyStatus').textContent = '';
+  });
+
+  $('tabTplWhatsapp').addEventListener('click', () => {
+    $('tabTplWhatsapp').classList.add('is-active');
+    $('tabTplSms').classList.remove('is-active');
+    $('openWhatsappAction').hidden = false;
+  });
+
+  $('tabTplSms').addEventListener('click', () => {
+    $('tabTplSms').classList.add('is-active');
+    $('tabTplWhatsapp').classList.remove('is-active');
+    $('openWhatsappAction').hidden = true;
+  });
+
+  $('copyMessageTemplate').addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText($('messageTemplateText').value);
+      $('messageCopyStatus').textContent = 'نُسخت الرسالة بنجاح ✓';
+    } catch {
+      $('messageTemplateText').select();
+      $('messageCopyStatus').textContent = 'حدّد النص وانسخه يدويًا.';
+    }
+  });
+
+  // Login & Logout
+  $('login').addEventListener('submit', async event => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const button = form.querySelector('button[type="submit"]');
+    button.disabled = true;
+    $('loginStatus').textContent = 'جارٍ التحقق...';
+
+    try {
+      const result = await api('login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: form.elements.password.value })
+      });
+      token = result.token;
+      sessionStorage.setItem('courseAdminToken', token);
+      form.reset();
+      await loadOrders();
+      await loadSettings();
+    } catch (error) {
+      $('loginStatus').textContent = error.message;
+    } finally {
+      button.disabled = false;
+    }
+  });
+
+  const doLogout = async () => {
+    try { await api('logout', { method: 'POST' }); } catch {}
+    token = '';
+    sessionStorage.removeItem('courseAdminToken');
+    orders = [];
+    $('rows').replaceChildren();
+    $('ordersMobile').replaceChildren();
+    $('dashboard').hidden = true;
+    $('login').hidden = false;
+    $('admin-login-nav').hidden = false;
+  };
+
+  $('logout').addEventListener('click', doLogout);
+  $('mobileLogout').addEventListener('click', doLogout);
+}
+
+// Start app
+initEvents();
+if (token) {
+  loadOrders().then(loadSettings).catch(() => {});
+}
