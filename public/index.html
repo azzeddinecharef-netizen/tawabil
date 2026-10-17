@@ -14,6 +14,11 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@500;700;900&display=swap" rel="stylesheet">
 <link rel="preload" as="image" href="assets/biskria/el-biskria-hero.webp" type="image/webp">
+<!-- Meta Pixel: loaded first so PageView counts visitors who leave before the page finishes; journey.js sends the rest of the visit. -->
+<script>
+!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
+fbq('init','2240942626481684');fbq('track','PageView');
+</script>
 
 
 
@@ -184,9 +189,11 @@ html{scroll-behavior:smooth}body{margin:0;background:#fff}
 </style>
 </head>
 <body>
+<!-- Counts visitors with JavaScript disabled or the pixel script blocked. -->
+<noscript><img height="1" width="1" style="display:none" alt="" src="https://www.facebook.com/tr?id=2240942626481684&amp;ev=PageView&amp;noscript=1"></noscript>
 <div class="elb" lang="ar" dir="rtl">
   <!-- HERO -->
-  <section class="elb-hero" aria-label="عرض توابل الشاورما">
+  <section class="elb-hero" data-section="hero" aria-label="عرض توابل الشاورما">
     <div class="elb-w elb-top">
       <div class="elb-logo"><img src="assets/biskria/el-biskria-logo.png" alt="شعار البسكرية للتوابل" width="46" height="46"><div><b>البسكرية للتوابل</b><small>EL-BISKRIA DES EPICES</small></div></div>
       <span class="elb-pill">منتج جزائري</span>
@@ -204,7 +211,7 @@ html{scroll-behavior:smooth}body{margin:0;background:#fff}
           <div class="elb-gift"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="8" width="18" height="13" rx="2"/><path d="M12 8v13M3 12h18M12 8S10 3 7.5 4.5 9 8 12 8zm0 0s2-5 4.5-3.5S15 8 12 8z"/></svg>+ علبة توابل شاورما 50غ هدية</div>
         </div>
         <p class="elb-single">أو كيس واحد 2 كلغ بـ <b>3000 دج</b></p>
-        <a class="elb-btn js-cta" href="#elb-order"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M3 4h2l2.4 11.2a2 2 0 0 0 2 1.6h7.7a2 2 0 0 0 2-1.5L21 8H6"/><circle cx="10" cy="20" r="1.4"/><circle cx="17" cy="20" r="1.4"/></svg>اطلب العرض الآن</a>
+        <a class="elb-btn js-cta" href="#elb-order" data-track="hero_primary" data-track-type="order" data-track-section="hero"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M3 4h2l2.4 11.2a2 2 0 0 0 2 1.6h7.7a2 2 0 0 0 2-1.5L21 8H6"/><circle cx="10" cy="20" r="1.4"/><circle cx="17" cy="20" r="1.4"/></svg>اطلب العرض الآن</a>
         <div class="elb-trust">
           <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7"/><circle cx="7" cy="18" r="1.6"/><circle cx="17" cy="18" r="1.6"/></svg>الدفع عند الاستلام</span>
           <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3 4 6v6c0 4.5 3.4 8 8 9 4.6-1 8-4.5 8-9V6z"/><path d="m9 12 2 2 4-4"/></svg>طبيعية 100%</span>
@@ -216,7 +223,7 @@ html{scroll-behavior:smooth}body{margin:0;background:#fff}
   </section>
 
   <!-- STATS -->
-  <div class="elb-stats" aria-label="أرقام العرض">
+  <div class="elb-stats" data-section="stats" aria-label="أرقام العرض">
     <div class="elb-w">
       <div class="elb-stat"><b>10 كلغ</b><span>توابل في العرض</span></div>
       <div class="elb-stat"><b>200 كلغ</b><span>شاورما يمكن تتبيلها</span></div>
@@ -226,12 +233,12 @@ html{scroll-behavior:smooth}body{margin:0;background:#fff}
   </div>
 
   <!-- CUSTOMER MEDIA -->
-  <section class="elb-sec elb-cream" id="elb-media" aria-labelledby="elb-media-title" hidden>
+  <section class="elb-sec elb-cream" id="elb-media" data-section="media" aria-labelledby="elb-media-title" hidden>
     <div class="elb-w"><span class="elb-kick">من البسكرية للتوابل</span><h2 id="elb-media-title">شاهد واستمع قبل الطلب</h2><p class="elb-sub">فيديوهات ورسائل صوتية للتعرّف أكثر على الباك.</p><div class="elb-media-grid" id="mediaGrid"></div></div>
   </section>
 
   <!-- USES -->
-  <section class="elb-sec elb-cream" aria-labelledby="elb-uses-t">
+  <section class="elb-sec elb-cream" data-section="uses" aria-labelledby="elb-uses-t">
     <div class="elb-w">
       <span class="elb-kick">تتبيلة وحدة، استعمالات بزاف</span>
       <h2 id="elb-uses-t">خلّي التتبيلة جزءًا من بنّة أطباقك</h2>
@@ -247,7 +254,7 @@ html{scroll-behavior:smooth}body{margin:0;background:#fff}
   </section>
 
   <!-- DOSE -->
-  <section class="elb-sec" aria-labelledby="elb-dose-t">
+  <section class="elb-sec" data-section="dose" aria-labelledby="elb-dose-t">
     <div class="elb-w elb-dose">
       <div>
         <span class="elb-kick">دليل الاستعمال العملي</span>
@@ -271,7 +278,7 @@ html{scroll-behavior:smooth}body{margin:0;background:#fff}
   </section>
 
   <!-- INGREDIENTS -->
-  <section class="elb-sec elb-cream" aria-labelledby="elb-ing-t">
+  <section class="elb-sec elb-cream" data-section="ingredients" aria-labelledby="elb-ing-t">
     <div class="elb-w">
       <span class="elb-kick">مكتوبة على الكيس</span>
       <h2 id="elb-ing-t">تركيبة كيس 2 كلغ</h2>
@@ -290,7 +297,7 @@ html{scroll-behavior:smooth}body{margin:0;background:#fff}
   </section>
 
   <!-- PACK + STORAGE -->
-  <section class="elb-sec" aria-labelledby="elb-pack-t">
+  <section class="elb-sec" data-section="pack" aria-labelledby="elb-pack-t">
     <div class="elb-w elb-pack">
       <div class="elb-pack-img"><picture><source srcset="assets/biskria/el-biskria-kitchen.webp" type="image/webp"><img src="assets/biskria/el-biskria-kitchen.webp" alt="كيس توابل الشاورما البسكرية 2 كلغ في مطبخ مع ثوم وطماطم" width="900" height="1125" loading="lazy"></picture></div>
       <div>
@@ -307,7 +314,7 @@ html{scroll-behavior:smooth}body{margin:0;background:#fff}
   </section>
 
   <!-- FAQ -->
-  <section class="elb-sec elb-cream" aria-labelledby="elb-faq-t">
+  <section class="elb-sec elb-cream" data-section="faq" aria-labelledby="elb-faq-t">
     <div class="elb-w">
       <span class="elb-kick">أسئلة شائعة</span>
       <h2 id="elb-faq-t">قبل ما تطلب</h2>
@@ -323,7 +330,7 @@ html{scroll-behavior:smooth}body{margin:0;background:#fff}
   </section>
 
   <!-- FINAL CTA -->
-  <section class="elb-final" aria-labelledby="elb-final-t">
+  <section class="elb-final" data-section="final" aria-labelledby="elb-final-t">
     <div class="elb-w">
       <h2 id="elb-final-t">5 أكياس توابل شاورما + توصيل مجاني</h2>
       <div class="elb-offer">
@@ -332,12 +339,12 @@ html{scroll-behavior:smooth}body{margin:0;background:#fff}
         <div class="elb-free"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7"/><circle cx="7" cy="18" r="1.6"/><circle cx="17" cy="18" r="1.6"/></svg>توصيل مجاني</div>
         <div class="elb-gift"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="8" width="18" height="13" rx="2"/><path d="M12 8v13M3 12h18M12 8S10 3 7.5 4.5 9 8 12 8zm0 0s2-5 4.5-3.5S15 8 12 8z"/></svg>+ علبة 50غ هدية</div>
       </div>
-      <a class="elb-btn js-cta" href="#elb-order">اطلب العرض الآن</a>
+      <a class="elb-btn js-cta" href="#elb-order" data-track="final_cta" data-track-type="order" data-track-section="final">اطلب العرض الآن</a>
       <div class="elb-arrow">أكمل بياناتك في نموذج الطلب أسفل العرض<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M12 4v16M5 13l7 7 7-7"/></svg></div>
     </div>
   </section>
   <!-- ORDER FORM -->
-  <section class="elb-sec elb-order" id="elb-order" aria-labelledby="elb-order-t">
+  <section class="elb-sec elb-order" id="elb-order" data-section="order" aria-labelledby="elb-order-t">
     <div class="elb-w">
       <div class="elb-form-card">
         <div class="elb-form-head">
@@ -403,21 +410,22 @@ html{scroll-behavior:smooth}body{margin:0;background:#fff}
       </div>
     </div>
   </section>
-  <footer class="elb-foot">
+  <footer class="elb-foot" data-section="footer">
     <div class="elb-w">
       <p>البسكرية للتوابل · EL-BISKRIA DES EPICES · منتج جزائري</p>
       <div class="elb-social">
-        <a href="https://www.facebook.com/elbiskria.des.epices.07/" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M22 12a10 10 0 1 0-11.6 9.9v-7H7.9V12h2.5V9.8c0-2.5 1.5-3.9 3.8-3.9 1.1 0 2.2.2 2.2.2v2.5h-1.3c-1.2 0-1.6.8-1.6 1.6V12h2.8l-.4 2.9h-2.3v7A10 10 0 0 0 22 12z"/></svg>صفحتنا على فيسبوك</a>
-        <a href="https://www.facebook.com/profile.php?id=61595166653809" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M22 12a10 10 0 1 0-11.6 9.9v-7H7.9V12h2.5V9.8c0-2.5 1.5-3.9 3.8-3.9 1.1 0 2.2.2 2.2.2v2.5h-1.3c-1.2 0-1.6.8-1.6 1.6V12h2.8l-.4 2.9h-2.3v7A10 10 0 0 0 22 12z"/></svg>حسابنا الثاني على فيسبوك</a>
+        <a href="https://www.facebook.com/elbiskria.des.epices.07/" target="_blank" rel="noopener" data-track="footer_facebook" data-track-type="social" data-track-section="footer"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M22 12a10 10 0 1 0-11.6 9.9v-7H7.9V12h2.5V9.8c0-2.5 1.5-3.9 3.8-3.9 1.1 0 2.2.2 2.2.2v2.5h-1.3c-1.2 0-1.6.8-1.6 1.6V12h2.8l-.4 2.9h-2.3v7A10 10 0 0 0 22 12z"/></svg>صفحتنا على فيسبوك</a>
+        <a href="https://www.facebook.com/profile.php?id=61595166653809" target="_blank" rel="noopener" data-track="footer_facebook_2" data-track-type="social" data-track-section="footer"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M22 12a10 10 0 1 0-11.6 9.9v-7H7.9V12h2.5V9.8c0-2.5 1.5-3.9 3.8-3.9 1.1 0 2.2.2 2.2.2v2.5h-1.3c-1.2 0-1.6.8-1.6 1.6V12h2.8l-.4 2.9h-2.3v7A10 10 0 0 0 22 12z"/></svg>حسابنا الثاني على فيسبوك</a>
       </div>
     </div>
   </footer>
 
   <!-- sticky mobile CTA -->
-  <div class="elb-sticky"><div>10 كلغ + توصيل مجاني<b>15000 دج</b></div><a class="elb-btn js-cta" href="#elb-order">اطلب الآن</a></div>
+  <div class="elb-sticky"><div>10 كلغ + توصيل مجاني<b>15000 دج</b></div><a class="elb-btn js-cta" href="#elb-order" data-track="sticky_cta" data-track-type="order" data-track-section="floating">اطلب الآن</a></div>
 </div>
 
 <script src="wilayas.js" defer></script>
+<script src="journey.js" defer></script>
 <script src="app.js" defer></script>
 </body>
 </html>
