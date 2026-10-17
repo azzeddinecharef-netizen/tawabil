@@ -14,6 +14,11 @@ const META_PIXEL_ID = '2240942626481684';
 const metaCapiAccessToken = Deno.env.get('META_CAPI_ACCESS_TOKEN') ?? '';
 const metaCapiTestEventCode = Deno.env.get('META_CAPI_TEST_EVENT_CODE') ?? '';
 const metaGraphApiVersion = Deno.env.get('META_GRAPH_API_VERSION') ?? 'v26.0';
+// Mirrors the offers in public/index.html; the client only says which offer was picked.
+const OFFERS: Record<string, { name: string; value: number }> = {
+  pack5: { name: '5 أكياس × 2 كلغ (10 كلغ) + علبة 50غ هدية', value: 15000 },
+  bag1: { name: 'كيس واحد 2 كلغ', value: 3000 },
+};
 const db = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
 const loginAttempts = new Map<string, { count: number; expires: number }>();
 const encoder = new TextEncoder();
@@ -74,7 +79,7 @@ function normalizeAlgerianPhone(value: string) {
 function validMetaCookie(value: unknown, prefix: string) {
   return typeof value === 'string' && value.length <= 200 && value.startsWith(prefix) && /^[\w.:-]+$/.test(value) ? value : '';
 }
-async function sendMetaLead(request: Request, body: any, eventId: string, pixelId: string) {
+async function sendMetaOrderEvents(request: Request, body: any, eventId: string, pixelId: string) {
   if (!metaCapiAccessToken || !/^\d{6,20}$/.test(pixelId)) return;
   const names = body.fullName.trim().split(/\s+/);
   const userData: Record<string, unknown> = {
@@ -91,15 +96,19 @@ async function sendMetaLead(request: Request, body: any, eventId: string, pixelI
   if (fbc) userData.fbc = fbc;
 
   const origin = request.headers.get('origin') ?? 'https://tawabil.africacold.fr';
+  const offerId = typeof body.offer === 'string' && Object.hasOwn(OFFERS, body.offer) ? body.offer : '';
+  const event: Record<string, unknown> = {
+    event_time: Math.floor(Date.now() / 1000),
+    event_id: eventId,
+    action_source: 'website',
+    event_source_url: `${origin}/`,
+    user_data: userData,
+  };
+  if (offerId) event.custom_data = { content_ids: [offerId], content_name: OFFERS[offerId].name, content_type: 'product', contents: [{ id: offerId, quantity: 1 }], value: OFFERS[offerId].value, currency: 'DZD' };
+  // Meta deduplicates on event_name + event_id, so both events can share the browser's eventID.
+  // Purchase requires a value, so it is only sent when the offer is known.
   const payload: Record<string, unknown> = {
-    data: [{
-      event_name: 'Lead',
-      event_time: Math.floor(Date.now() / 1000),
-      event_id: eventId,
-      action_source: 'website',
-      event_source_url: `${origin}/`,
-      user_data: userData,
-    }],
+    data: [{ event_name: 'Lead', ...event }, ...(offerId ? [{ event_name: 'Purchase', ...event }] : [])],
   };
   if (metaCapiTestEventCode) payload.test_event_code = metaCapiTestEventCode;
   const endpoint = new URL(`https://graph.facebook.com/${metaGraphApiVersion}/${pixelId}/events`);
@@ -111,10 +120,10 @@ async function sendMetaLead(request: Request, body: any, eventId: string, pixelI
       body: JSON.stringify(payload),
       signal: AbortSignal.timeout(5000),
     });
-    if (!response.ok) console.error('Meta CAPI Lead delivery failed:', response.status);
+    if (!response.ok) console.error('Meta CAPI order events delivery failed:', response.status);
   } catch {
     // Order acceptance must not fail if Meta's tracking endpoint is unavailable.
-    console.error('Meta CAPI Lead delivery failed: network error');
+    console.error('Meta CAPI order events delivery failed: network error');
   }
 }
 async function authorized(request: Request) {
@@ -148,7 +157,7 @@ Deno.serve(async (request: Request) => {
     // Legacy pages keep working; only opted-in updated clients use server tracking.
     if (eventId && body.metaConsent === true) {
       try {
-        await sendMetaLead(request, body, eventId, META_PIXEL_ID);
+        await sendMetaOrderEvents(request, body, eventId, META_PIXEL_ID);
       } catch { console.error('Meta CAPI tracking unavailable; order saved'); }
     }
     return reply(request, { ok: true, ...(eventId ? { eventId } : {}) }, 201);

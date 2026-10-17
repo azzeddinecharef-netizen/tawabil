@@ -2,6 +2,7 @@ const API = 'https://cawroeqwtuxfmaqxuypd.supabase.co/functions/v1/course-api';
 const $ = id => document.getElementById(id);
 
 const META_PIXEL_ID = '2240942626481684';
+const META_CURRENCY = 'DZD';
 
 function initializeMetaPixel(value) {
   const metaPixelId = String(value || '').trim();
@@ -90,6 +91,30 @@ const refreshTotal = () => {
 };
 offerInputs.forEach(input => input.addEventListener('change', refreshTotal));
 
+// Meta funnel: ViewContent → AddToCart → InitiateCheckout → Lead + Purchase.
+// Events describe the selected offer only; form fields never go to the browser pixel.
+function offerEventData(offer) {
+  return { content_ids: [offer.value], content_name: offer.dataset.label, content_type: 'product', contents: [{ id: offer.value, quantity: 1 }], value: Number(offer.dataset.price), currency: META_CURRENCY };
+}
+function trackMeta(name, data, eventId) {
+  if (!window.fbq) return;
+  if (eventId) window.fbq('track', name, data, { eventID: eventId });
+  else window.fbq('track', name, data);
+}
+const trackedMetaEvents = new Set();
+function trackMetaOnce(name) {
+  if (trackedMetaEvents.has(name)) return;
+  trackedMetaEvents.add(name);
+  trackMeta(name, offerEventData(selectedOffer()));
+}
+const trackAddToCart = () => trackMetaOnce('AddToCart');
+const trackInitiateCheckout = () => { trackAddToCart(); trackMetaOnce('InitiateCheckout'); };
+
+trackMeta('ViewContent', offerEventData(selectedOffer()));
+document.querySelectorAll('.js-cta').forEach(link => link.addEventListener('click', trackAddToCart));
+offerInputs.forEach(input => input.addEventListener('change', trackAddToCart));
+['focusin', 'input', 'change'].forEach(type => form.addEventListener(type, event => { if (event.target.closest('.elb-field')) trackInitiateCheckout(); }));
+
 const wilayas = window.ELB_DZ || [];
 const wilayaSelect = $('f-wilaya');
 const communeSelect = $('f-commune');
@@ -114,6 +139,7 @@ form.addEventListener('submit', async event => {
   const status = $('elb-form-msg');
   status.className = 'elb-form-msg'; status.textContent = '';
   if (form.elements.website.value) return;
+  trackInitiateCheckout();
   if (!form.checkValidity()) { form.reportValidity(); return; }
   const phone = form.elements.phone.value.trim().replace(/[\s().-]/g, '');
   if (!/^0[567]\d{8}$/.test(phone)) { status.textContent = 'تحقق من رقم الهاتف؛ يجب أن يتكون من 10 أرقام ويبدأ بـ 05 أو 06 أو 07.'; $('f-phone').focus(); return; }
@@ -133,6 +159,7 @@ form.addEventListener('submit', async event => {
     consent: form.elements.consent.checked,
     metaConsent: form.elements.consent.checked,
     eventId,
+    offer: offer.value,
     fbp: readMetaCookie('_fbp'),
     fbc: readMetaCookie('_fbc')
   };
@@ -142,7 +169,10 @@ form.addEventListener('submit', async event => {
     const result = await response.json(); if (!response.ok) throw Error(result.error);
     form.hidden = true; $('elb-thanks-phone').textContent = phone; $('elb-thanks').hidden = false; $('elb-thanks').focus();
     // Fire only after the order has been accepted; never send form fields to Meta.
-    if (window.fbq) window.fbq('track', 'Lead', {}, { eventID: result.eventId || eventId });
+    // The server sends the same events through the Conversions API; matching eventIDs deduplicate them.
+    const orderEventData = offerEventData(offer);
+    trackMeta('Lead', orderEventData, result.eventId || eventId);
+    trackMeta('Purchase', orderEventData, result.eventId || eventId);
     const sticky = document.querySelector('.elb-sticky'); if (sticky) sticky.style.display = 'none';
   } catch (error) {
     status.textContent = error.message || 'تعذر إرسال الطلب. حاول مجددًا.';
