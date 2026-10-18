@@ -155,19 +155,19 @@ function renderOverview(countByStatus) {
   const newPct = total ? Math.round((newCount / total) * 100) : 0;
 
   // Stat numbers
-  $('statTotal').textContent = total.toLocaleString('ar-DZ');
-  $('statNew').textContent = newCount.toLocaleString('ar-DZ');
-  $('statConfirmed').textContent = confirmedCount.toLocaleString('ar-DZ');
-  $('statRejected').textContent = rejectedCount.toLocaleString('ar-DZ');
+  if ($('statTotal')) $('statTotal').textContent = total.toLocaleString('ar-DZ');
+  if ($('statNew')) $('statNew').textContent = newCount.toLocaleString('ar-DZ');
+  if ($('statConfirmed')) $('statConfirmed').textContent = confirmedCount.toLocaleString('ar-DZ');
+  if ($('statRejected')) $('statRejected').textContent = rejectedCount.toLocaleString('ar-DZ');
 
   if ($('bannerNewCount')) $('bannerNewCount').textContent = newCount.toLocaleString('ar-DZ');
   if ($('statConfirmedPct')) $('statConfirmedPct').textContent = `${confirmedPct}%`;
   if ($('statRejectedPct')) $('statRejectedPct').textContent = `${rejectedPct}%`;
 
   // Overview distribution meters
-  $('overviewNew').textContent = newCount.toLocaleString('ar-DZ');
-  $('overviewConfirmed').textContent = confirmedCount.toLocaleString('ar-DZ');
-  $('overviewRejected').textContent = rejectedCount.toLocaleString('ar-DZ');
+  if ($('overviewNew')) $('overviewNew').textContent = newCount.toLocaleString('ar-DZ');
+  if ($('overviewConfirmed')) $('overviewConfirmed').textContent = confirmedCount.toLocaleString('ar-DZ');
+  if ($('overviewRejected')) $('overviewRejected').textContent = rejectedCount.toLocaleString('ar-DZ');
 
   if ($('overviewNewPct')) $('overviewNewPct').textContent = `${newPct}%`;
   if ($('overviewConfirmedPct')) $('overviewConfirmedPct').textContent = `${confirmedPct}%`;
@@ -179,9 +179,9 @@ function renderOverview(countByStatus) {
   const ratio = total ? Math.round((confirmedCount / total) * 10) : 7;
   if ($('meterInsightText')) $('meterInsightText').textContent = `${ratio} من كل 10 طلبات تم تأكيدها بنجاح.`;
 
-  $('meterNew').style.width = `${newPct}%`;
-  $('meterConfirmed').style.width = `${confirmedPct}%`;
-  $('meterRejected').style.width = `${rejectedPct}%`;
+  if ($('meterNew')) $('meterNew').style.width = `${newPct}%`;
+  if ($('meterConfirmed')) $('meterConfirmed').style.width = `${confirmedPct}%`;
+  if ($('meterRejected')) $('meterRejected').style.width = `${rejectedPct}%`;
 
   // Navigation badge counts
   if ($('sideCount')) $('sideCount').textContent = newCount.toLocaleString('ar-DZ');
@@ -1500,8 +1500,16 @@ function initEvents() {
       token = result.token;
       sessionStorage.setItem('courseAdminToken', token);
       form.reset();
-      await loadOrders();
-      await loadSettings();
+      $('login').hidden = true;
+      $('admin-login-nav').hidden = true;
+      $('dashboard').hidden = false;
+      try {
+        await loadOrders();
+        await loadSettings();
+      } catch (loadErr) {
+        console.error('Data load error:', loadErr);
+        if ($('adminStatus')) $('adminStatus').textContent = 'تنبيه: ' + loadErr.message;
+      }
     } catch (error) {
       $('loginStatus').textContent = error.message;
     } finally {
