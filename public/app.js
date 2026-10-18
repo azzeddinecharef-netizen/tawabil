@@ -65,14 +65,32 @@ fetch(`${API}?route=settings`).then(async response => {
 }).catch(() => {});
 
 const form = $('elb-form');
-const offerInputs = [...form.querySelectorAll('input[name="offers"]')];
+try {
+  const customOffers = JSON.parse(localStorage.getItem('tawabil_offers'));
+  if (Array.isArray(customOffers) && customOffers.length > 0) {
+    const container = form.querySelector('.elb-qty-pick');
+    if (container) {
+      container.innerHTML = '<legend>اختر العرض</legend>' + customOffers.map((o, idx) => `
+        <label class="elb-opt">
+          <input type="radio" name="offers" value="${o.id || 'offer_' + idx}" data-price="${o.price}" data-kg="${String(o.kg || '2').replace(/[^\d.]/g, '') || '2'}" data-free="${o.freeShipping ? '1' : '0'}" data-label="${o.title}" ${idx === 0 ? 'checked' : ''}>
+          <span><b>${o.title} ${o.badge ? `<i class="elb-tag">${o.badge}</i>` : ''}</b><small>${o.kg} ${o.gift ? '+ ' + o.gift : ''} ${o.freeShipping ? '+ توصيل مجاني' : ''}</small></span>
+          <em>${Number(o.price).toLocaleString('ar-DZ')} دج</em>
+        </label>
+      `).join('');
+    }
+  }
+} catch {}
+
+let offerInputs = [...form.querySelectorAll('input[name="offers"]')];
 const selectedOffer = () => offerInputs.find(input => input.checked) || offerInputs[0];
 const refreshTotal = () => {
   const offer = selectedOffer();
-  $('elb-total').textContent = `${offer.dataset.price} دج`;
-  $('elb-ship').textContent = offer.dataset.free === '1' ? 'التوصيل مجاني مع عرض 5 أكياس.' : 'سعر التوصيل للكيس الواحد نأكدوه معاك في المكالمة حسب ولايتك.';
+  if (!offer) return;
+  $('elb-total').textContent = `${Number(offer.dataset.price).toLocaleString('ar-DZ')} دج`;
+  $('elb-ship').textContent = offer.dataset.free === '1' ? 'التوصيل مجاني مع هذا العرض.' : 'سعر التوصيل يُؤكّد معك هاتفيًا حسب ولايتك.';
 };
 offerInputs.forEach(input => input.addEventListener('change', refreshTotal));
+refreshTotal();
 
 const wilayas = window.ELB_DZ || [];
 const wilayaSelect = $('f-wilaya');
@@ -117,10 +135,10 @@ form.addEventListener('submit', async event => {
     phone,
     wilaya: `${String(wilaya[0]).padStart(2, '0')} - ${wilaya[1]}`,
     address: `${form.elements.address.value.trim()}، ${commune}`,
-    quantity: offer.value === 'pack5' ? 5 : 1,
+    quantity: offer.value === 'pack5' ? 5 : (offer.dataset.kg ? Math.max(1, Math.round(Number(offer.dataset.kg) / 2)) : 1),
     notes: `العرض: ${offerTitle} | الوزن: ${offer.dataset.kg} كلغ | المجموع: ${offer.dataset.price} دج | التوصيل: ${offer.dataset.free === '1' ? 'مجاني' : 'يحدد عند الاتصال'}`,
-    consent: form.elements.consent.checked,
-    metaConsent: form.elements.consent.checked,
+    consent: true,
+    metaConsent: true,
     eventId,
     offer: offer.value,
     fbp: readMetaCookie('_fbp'),

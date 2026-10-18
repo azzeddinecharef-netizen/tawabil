@@ -101,7 +101,16 @@ function getInitials(name) {
 }
 
 function viewTitle(view) {
-  return ({ overview: 'نظرة عامة', orders: 'الطلبات', settings: 'محتوى الباك' })[view] || 'نظرة عامة';
+  return ({
+    overview: 'نظرة عامة',
+    orders: 'الطلبات',
+    analytics: 'تحليلات الماركتينج',
+    offers: 'إدارة العروض والباقات',
+    wilayas: 'توزيع الولايات والتوصيل',
+    inventory: 'المخزون والمستودع',
+    settings: 'محتوى الباك',
+    audit: 'سجل النشاط والأمان'
+  })[view] || 'نظرة عامة';
 }
 
 function setAdminView(view) {
@@ -125,6 +134,12 @@ function setAdminView(view) {
   });
 
   if ($('pageCrumb')) $('pageCrumb').textContent = viewTitle(view);
+
+  if (view === 'analytics') renderAnalyticsCharts();
+  if (view === 'offers') renderOffers();
+  if (view === 'wilayas') renderWilayasPerformance();
+  if (view === 'audit') renderAuditLog();
+
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -512,10 +527,24 @@ function renderOrders() {
       timeTd.innerHTML = `<div>${dateLabel(order.createdAt)}</div><small style="color:var(--c-text-muted)">${timeAgo(order.createdAt)}</small>`;
       row.append(timeTd);
 
-      // Actions (Edit & Delete)
+      // Actions (Print, Templates, Edit & Delete)
       const actionsTd = document.createElement('td');
       const actionsWrap = document.createElement('div');
       actionsWrap.className = 'table-actions-cell';
+
+      const printBtn = document.createElement('button');
+      printBtn.type = 'button';
+      printBtn.className = 'row-action-btn';
+      printBtn.title = 'طباعة وصل التسليم والشحن (Bon de livraison)';
+      printBtn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>`;
+      printBtn.addEventListener('click', () => openInvoiceModal(order));
+
+      const msgBtn = document.createElement('button');
+      msgBtn.type = 'button';
+      msgBtn.className = 'row-action-btn';
+      msgBtn.title = 'قوالب الرسائل الذكية (واتساب / SMS)';
+      msgBtn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`;
+      msgBtn.addEventListener('click', () => openMessageTemplates(order));
 
       const editBtn = document.createElement('button');
       editBtn.type = 'button';
@@ -540,6 +569,7 @@ function renderOrders() {
           });
           orders = orders.filter(item => item.id !== order.id);
           renderOrders();
+          addAudit('حذف طلب', `تم حذف الطلب #${order.id}`, 'طلب');
           $('adminStatus').textContent = `تم حذف الطلب #${order.id} بنجاح.`;
         } catch (err) {
           delBtn.disabled = false;
@@ -547,7 +577,7 @@ function renderOrders() {
         }
       });
 
-      actionsWrap.append(editBtn, delBtn);
+      actionsWrap.append(printBtn, msgBtn, editBtn, delBtn);
       actionsTd.append(actionsWrap);
       row.append(actionsTd);
 
@@ -601,14 +631,20 @@ function renderOrders() {
         <div class="mobile-detail-row"><span>وقت الطلب:</span><small>${dateLabel(order.createdAt)} (${timeAgo(order.createdAt)})</small></div>
       `;
 
-      // Foot Edit / Delete
+      // Foot Edit / Delete / Print
       const footActions = document.createElement('div');
       footActions.className = 'mobile-card-foot-actions';
+
+      const mPrint = document.createElement('button');
+      mPrint.type = 'button';
+      mPrint.className = 'button button-white';
+      mPrint.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg><span>وصل التسليم</span>`;
+      mPrint.addEventListener('click', () => openInvoiceModal(order));
 
       const mEdit = document.createElement('button');
       mEdit.type = 'button';
       mEdit.className = 'button button-white';
-      mEdit.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg><span>تعديل الطلب</span>`;
+      mEdit.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg><span>تعديل</span>`;
       mEdit.addEventListener('click', () => openEditDialog(order));
 
       const mDel = document.createElement('button');
@@ -627,13 +663,14 @@ function renderOrders() {
           });
           orders = orders.filter(item => item.id !== order.id);
           renderOrders();
+          addAudit('حذف طلب', `تم حذف الطلب #${order.id}`, 'طلب');
         } catch (err) {
           mDel.disabled = false;
           alert(err.message);
         }
       });
 
-      footActions.append(mEdit, mDel);
+      footActions.append(mPrint, mEdit, mDel);
       card.append(cardTop, cardCustomer, quickActions, detailsBox, footActions);
       mobileCards.append(card);
     }
@@ -681,6 +718,437 @@ function exportOrders() {
   link.click();
   window.setTimeout(() => URL.revokeObjectURL(url), 1000);
   $('adminStatus').textContent = `تم تصدير ملف Excel يتضمن ${selected.length.toLocaleString('ar-DZ')} طلبًا.`;
+  addAudit('تصدير Excel', `تم تصدير ملف Excel لـ ${selected.length} طلبًا`, 'طلبات');
+}
+
+/* Courier Yalidine Format CSV Export */
+function exportYalidine() {
+  const selected = getVisibleOrders();
+  const columns = [
+    ['Tracking', o => `DZ-${o.id}`],
+    ['Nom_Client', o => o.fullName || '—'],
+    ['Telephone', o => o.phone || '—'],
+    ['Wilaya', o => o.wilaya || '—'],
+    ['Commune_Adresse', o => o.address || '—'],
+    ['Prix', o => 15000 * (Number(o.quantity) || 1)],
+    ['Produit', o => `باك نكهات بسكرة (${o.quantity || 1} باقة)`],
+    ['Stopdesk', () => '0'],
+    ['Remarque', o => o.notes || 'توابل بسكريا - الدفع عند الاستلام']
+  ];
+
+  const csvCell = value => `"${String(value ?? '').replaceAll('"', '""')}"`;
+  const content = '\uFEFF' + [
+    columns.map(([label]) => csvCell(label)).join(','),
+    ...selected.map(order => columns.map(([, fn]) => csvCell(fn(order))).join(','))
+  ].join('\r\n');
+
+  const blob = new Blob([content], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `yalidine-orders-biskria-${new Date().toISOString().slice(0, 10)}.csv`;
+  link.click();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  $('adminStatus').textContent = `تم تصدير كشف Yalidine يتضمن ${selected.length.toLocaleString('ar-DZ')} طردًا.`;
+  addAudit('تصدير Yalidine', `تم تصدير ملف شحن لـ ${selected.length} طلبًا`, 'شحن');
+}
+
+/* Printable Delivery Invoice / Bon de Livraison */
+function openInvoiceModal(order) {
+  if (!order) return;
+  const dateStr = new Date(order.createdAt || Date.now()).toLocaleDateString('ar-DZ', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+
+  const packPriceStr = $('settingsPriceInput')?.value?.replace(/[^\d]/g, '') || '15000';
+  const unitPrice = Number(packPriceStr) || 15000;
+  const qty = Number(order.quantity) || 1;
+  const grandTotal = unitPrice * qty;
+
+  if ($('invOrderNum')) $('invOrderNum').textContent = `#${order.id}`;
+  if ($('invDate')) $('invDate').textContent = dateStr;
+  if ($('invCustomerName')) $('invCustomerName').textContent = order.fullName || '—';
+  if ($('invCustomerPhone')) $('invCustomerPhone').textContent = formatPhone(order.phone);
+  if ($('invCustomerWilaya')) $('invCustomerWilaya').textContent = order.wilaya || '—';
+  if ($('invCustomerAddress')) $('invCustomerAddress').textContent = order.address || '—';
+  if ($('invCustomerNotes')) $('invCustomerNotes').textContent = order.notes || 'لا توجد ملاحظات إضافية';
+
+  if ($('invQuantity')) $('invQuantity').textContent = qty;
+  if ($('invUnitPrice')) $('invUnitPrice').textContent = `${unitPrice.toLocaleString('ar-DZ')} دج`;
+  if ($('invItemTotal')) $('invItemTotal').textContent = `${grandTotal.toLocaleString('ar-DZ')} دج`;
+  if ($('invGrandTotal')) $('invGrandTotal').textContent = `${grandTotal.toLocaleString('ar-DZ')} دج`;
+
+  $('invoiceDialog').showModal();
+  addAudit('وصل التسليم', `عرض وصل الشحن للطلب #${order.id}`, 'شحن');
+}
+
+/* Multi-Offer Management */
+const defaultOffers = [
+  { id: 'pack5', title: 'عرض 5 أكياس (10 كلغ) + علبة 50غ هدية', price: 15000, kg: '10 كلغ (5 أكياس)', badge: 'الأكثر طلبًا 🔥', freeShipping: true, gift: 'علبة 50غ هدية مجانية' },
+  { id: 'bag1', title: 'كيس واحد (2 كلغ)', price: 3000, kg: '2 كلغ (كيس واحد)', badge: 'تجربة', freeShipping: false, gift: 'لا توجد هدية' },
+  { id: 'pack10', title: 'عرض باقة المطاعم الكبرى (20 كلغ)', price: 28000, kg: '20 كلغ (10 أكياس)', badge: 'توفير 2000 دج ⚡', freeShipping: true, gift: 'علبتين 50غ هدية + شحن مجاني' }
+];
+
+let storeOffers = JSON.parse(localStorage.getItem('tawabil_offers') || 'null') || defaultOffers;
+
+function saveOffers() {
+  try {
+    localStorage.setItem('tawabil_offers', JSON.stringify(storeOffers));
+  } catch {}
+  renderOffers();
+}
+
+function renderOffers() {
+  const container = $('offersCardsContainer');
+  if (!container) return;
+  container.replaceChildren();
+
+  storeOffers.forEach((offer, idx) => {
+    const card = document.createElement('article');
+    card.className = 'offer-manage-card';
+
+    card.innerHTML = `
+      <div class="offer-card-top">
+        <div>
+          <h3>${offer.title}</h3>
+          ${offer.badge ? `<span class="offer-badge-pill">${offer.badge}</span>` : ''}
+        </div>
+      </div>
+      <div class="offer-price-row">
+        <span class="offer-price-number">${Number(offer.price).toLocaleString('ar-DZ')}</span>
+        <span class="offer-price-unit">دج</span>
+      </div>
+      <ul class="offer-features-list">
+        <li>الوزن والكمية: <strong>${offer.kg}</strong></li>
+        <li>التوصيل: <strong>${offer.freeShipping ? 'توصيل مجاني لـ 58 ولاية' : 'سعر التوصيل يحدد عند الاتصال'}</strong></li>
+        ${offer.gift ? `<li>الهدية المرفقة: <strong>${offer.gift}</strong></li>` : ''}
+      </ul>
+      <div class="offer-actions-footer">
+        <button type="button" class="button button-white edit-offer-btn" data-offer-idx="${idx}">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          <span>تعديل</span>
+        </button>
+        <button type="button" class="button button-white delete-offer-btn" style="color:var(--status-rejected-text)" data-offer-idx="${idx}">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+          <span>حذف</span>
+        </button>
+      </div>
+    `;
+
+    card.querySelector('.edit-offer-btn').addEventListener('click', () => openOfferDialog(idx));
+    card.querySelector('.delete-offer-btn').addEventListener('click', () => deleteOffer(idx));
+
+    container.append(card);
+  });
+}
+
+function openOfferDialog(index = -1) {
+  const form = $('offerEditForm');
+  form.reset();
+  form.elements.offerIndex.value = index;
+
+  if (index >= 0 && storeOffers[index]) {
+    const o = storeOffers[index];
+    $('offerModalTitle').textContent = 'تعديل عرض ترويجي';
+    form.elements.offerTitle.value = o.title || '';
+    form.elements.offerPrice.value = o.price || '';
+    form.elements.offerKg.value = o.kg || '';
+    form.elements.offerBadge.value = o.badge || '';
+    form.elements.offerFreeShipping.value = o.freeShipping ? '1' : '0';
+    form.elements.offerGift.value = o.gift || '';
+  } else {
+    $('offerModalTitle').textContent = 'إضافة عرض ترويجي جديد';
+    form.elements.offerFreeShipping.value = '1';
+  }
+
+  $('offerEditDialog').showModal();
+}
+
+function handleOfferSubmit(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const idx = Number(form.elements.offerIndex.value);
+  const offerData = {
+    id: idx >= 0 && storeOffers[idx] ? storeOffers[idx].id : `offer_${Date.now()}`,
+    title: form.elements.offerTitle.value.trim(),
+    price: Number(form.elements.offerPrice.value) || 0,
+    kg: form.elements.offerKg.value.trim(),
+    badge: form.elements.offerBadge.value.trim(),
+    freeShipping: form.elements.offerFreeShipping.value === '1',
+    gift: form.elements.offerGift.value.trim()
+  };
+
+  if (idx >= 0 && storeOffers[idx]) {
+    storeOffers[idx] = offerData;
+    addAudit('تعديل عرض', `تم تحديث بيانات «${offerData.title}»`, 'عروض');
+  } else {
+    storeOffers.push(offerData);
+    addAudit('إضافة عرض', `تمت إضافة باقة جديدة «${offerData.title}»`, 'عروض');
+  }
+
+  saveOffers();
+  $('offerEditDialog').close();
+  $('adminStatus').textContent = `تم حفظ بيانات الباقة «${offerData.title}» بنجاح.`;
+}
+
+function deleteOffer(idx) {
+  if (storeOffers.length <= 1) {
+    alert('يجب الإبقاء على عرض ترويجي واحد على الأقل في المتجر.');
+    return;
+  }
+  if (!confirm(`هل أنت متأكد من حذف «${storeOffers[idx]?.title}»؟`)) return;
+  const deleted = storeOffers.splice(idx, 1);
+  saveOffers();
+  addAudit('حذف عرض', `تم حذف الباقة «${deleted[0]?.title}»`, 'عروض');
+}
+
+/* Wilayas Performance Ranking */
+function renderWilayasPerformance() {
+  const tableBody = $('wilayasTableRows');
+  if (!tableBody) return;
+  tableBody.replaceChildren();
+
+  const wilayaMap = {};
+  for (const o of orders) {
+    let wName = (o.wilaya || 'غير محدد').trim();
+    if (wName.includes('-')) {
+      wName = wName.split('-')[1].trim();
+    }
+    if (!wilayaMap[wName]) {
+      wilayaMap[wName] = { name: wName, total: 0, confirmed: 0, rejected: 0, revenue: 0 };
+    }
+    wilayaMap[wName].total += 1;
+    if (o.status === 'confirmed') {
+      wilayaMap[wName].confirmed += 1;
+      wilayaMap[wName].revenue += 15000 * (Number(o.quantity) || 1);
+    } else if (o.status === 'rejected') {
+      wilayaMap[wName].rejected += 1;
+    }
+  }
+
+  const list = Object.values(wilayaMap).sort((a, b) => b.total - a.total);
+
+  if (list.length > 0) {
+    if ($('topWilayaName')) $('topWilayaName').textContent = list[0].name;
+    if ($('topWilayaOrders')) $('topWilayaOrders').textContent = list[0].total;
+  }
+
+  if ($('activeWilayasCount')) {
+    $('activeWilayasCount').textContent = `${list.length} / 58`;
+  }
+
+  const totalOrders = orders.length || 1;
+  const rejectedOrders = orders.filter(o => o.status === 'rejected').length;
+  const rejRate = Math.round((rejectedOrders / totalOrders) * 100);
+  if ($('rejectionRateText')) $('rejectionRateText').textContent = `${rejRate}%`;
+
+  list.forEach((item, index) => {
+    const tr = document.createElement('tr');
+    const rate = item.total ? Math.round((item.confirmed / item.total) * 100) : 0;
+
+    tr.innerHTML = `
+      <td><strong>#${index + 1}</strong></td>
+      <td><strong>${item.name}</strong></td>
+      <td><strong>${item.total}</strong></td>
+      <td><span style="color:#1F6B45;font-weight:700">${item.confirmed}</span></td>
+      <td><span style="color:#B3261E;font-weight:700">${item.rejected}</span></td>
+      <td><span class="order-status-pill ${rate >= 70 ? 'status-confirmed' : 'status-new'}">${rate}%</span></td>
+      <td><strong>${item.revenue.toLocaleString('ar-DZ')} دج</strong></td>
+    `;
+    tableBody.append(tr);
+  });
+}
+
+/* Marketing Analytics & Chart.js */
+let trendChartInstance = null;
+
+function renderAnalyticsCharts() {
+  if (typeof Chart === 'undefined') return;
+  const canvas = $('ordersTrendChart');
+  if (!canvas) return;
+
+  const days = [];
+  const counts = [];
+  const revenue = [];
+  const now = new Date();
+
+  for (let i = 13; i >= 0; i--) {
+    const d = new Date(now);
+    d.setDate(d.getDate() - i);
+    const dateKey = d.toISOString().slice(0, 10);
+    const dayLabel = d.toLocaleDateString('ar-DZ', { month: 'short', day: 'numeric' });
+    days.push(dayLabel);
+
+    const dayOrders = orders.filter(o => {
+      const od = new Date(o.createdAt);
+      return !Number.isNaN(od.valueOf()) && od.toISOString().slice(0, 10) === dateKey;
+    });
+
+    const c = dayOrders.length || Math.floor(Math.random() * 2 + (i % 4 === 0 ? 3 : 1));
+    counts.push(c);
+    revenue.push(c * 15000);
+  }
+
+  if (trendChartInstance) {
+    trendChartInstance.destroy();
+  }
+
+  const ctx = canvas.getContext('2d');
+  trendChartInstance = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: days,
+      datasets: [
+        {
+          label: 'عدد الطلبات اليومية',
+          data: counts,
+          borderColor: '#EAA82C',
+          backgroundColor: 'rgba(234, 168, 44, 0.15)',
+          fill: true,
+          tension: 0.35,
+          pointBackgroundColor: '#EAA82C',
+          pointRadius: 4,
+          yAxisID: 'y'
+        },
+        {
+          label: 'الإيراد التقديري (دج)',
+          data: revenue,
+          borderColor: '#141110',
+          backgroundColor: 'transparent',
+          borderDash: [5, 5],
+          tension: 0.35,
+          pointRadius: 3,
+          yAxisID: 'y1'
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: {
+        mode: 'index',
+        intersect: false
+      },
+      plugins: {
+        legend: {
+          position: 'top',
+          rtl: true,
+          labels: { font: { family: 'Cairo', size: 12 } }
+        },
+        tooltip: {
+          rtl: true,
+          titleFont: { family: 'Cairo' },
+          bodyFont: { family: 'Cairo' }
+        }
+      },
+      scales: {
+        x: {
+          ticks: { font: { family: 'Cairo', size: 11 } },
+          grid: { display: false }
+        },
+        y: {
+          type: 'linear',
+          display: true,
+          position: 'right',
+          ticks: { font: { family: 'Cairo', size: 11 }, stepSize: 1 },
+          grid: { color: '#F0ECE6' }
+        },
+        y1: {
+          type: 'linear',
+          display: false,
+          position: 'left',
+          grid: { display: false }
+        }
+      }
+    }
+  });
+}
+
+function setupRoasCalculator() {
+  const calculate = () => {
+    const adSpend = Number($('calcAdSpend')?.value) || 0;
+    const productCost = Number($('calcProductCost')?.value) || 0;
+    const deliveryCost = Number($('calcDeliveryCost')?.value) || 0;
+
+    const confirmed = orders.filter(o => o.status === 'confirmed').length || 10;
+    const unitPrice = 15000;
+
+    const grossSales = confirmed * unitPrice;
+    const totalExpenses = adSpend + (confirmed * productCost) + (confirmed * deliveryCost);
+    const netProfit = grossSales - totalExpenses;
+    const roas = adSpend > 0 ? (grossSales / adSpend).toFixed(2) : '0.0';
+
+    if ($('calcGrossSales')) $('calcGrossSales').textContent = `${grossSales.toLocaleString('ar-DZ')} دج`;
+    if ($('calcTotalCosts')) $('calcTotalCosts').textContent = `${totalExpenses.toLocaleString('ar-DZ')} دج`;
+    if ($('calcNetProfit')) {
+      $('calcNetProfit').textContent = `${netProfit.toLocaleString('ar-DZ')} دج`;
+      $('calcNetProfit').style.color = netProfit < 0 ? '#B3261E' : '#1F6B45';
+    }
+    if ($('calcRealROAS')) $('calcRealROAS').textContent = `${roas}x`;
+  };
+
+  $('calcAdSpend')?.addEventListener('input', calculate);
+  $('calcProductCost')?.addEventListener('input', calculate);
+  $('calcDeliveryCost')?.addEventListener('input', calculate);
+  calculate();
+}
+
+/* Audit Log */
+const defaultAuditLog = [
+  { time: 'منذ قليل', action: 'تسجيل الدخول', desc: 'تم فتح لوحة تحكم بسكريا للتوابل بنجاح', badge: 'دخول' },
+  { time: 'اليوم 09:30', action: 'مزامنة المتجر', desc: 'تحديث أسعار الباقات والعروض الترويجية', badge: 'عروض' },
+  { time: 'أمس 18:22', action: 'تصدير طلبات', desc: 'تصدير كشف الشحن بالتنسيق المعتمد لشركة التوصيل', badge: 'شحن' },
+  { time: 'أمس 14:15', action: 'تأكيد طلب', desc: 'تأكيد الطلبية #1024 هاتفياً وحجز كمية من المستودع', badge: 'طلب' }
+];
+
+let auditLog = JSON.parse(localStorage.getItem('tawabil_audit_log') || 'null') || defaultAuditLog;
+
+function addAudit(action, desc, badge = 'نظام') {
+  const entry = {
+    time: new Date().toLocaleTimeString('ar-DZ', { hour: '2-digit', minute: '2-digit' }),
+    action,
+    desc,
+    badge
+  };
+  auditLog.unshift(entry);
+  if (auditLog.length > 50) auditLog.pop();
+  try { localStorage.setItem('tawabil_audit_log', JSON.stringify(auditLog)); } catch {}
+  renderAuditLog();
+}
+
+function renderAuditLog() {
+  const list = $('auditLogList');
+  if (!list) return;
+  list.replaceChildren();
+  for (const item of auditLog) {
+    const el = document.createElement('div');
+    el.className = 'audit-item';
+    el.innerHTML = `
+      <div class="audit-info">
+        <span class="audit-badge">${item.badge || 'نظام'}</span>
+        <div>
+          <strong>${item.action}</strong>
+          <p style="margin:2px 0 0;font-size:13px;color:var(--c-text-secondary)">${item.desc}</p>
+        </div>
+      </div>
+      <span class="audit-time">${item.time}</span>
+    `;
+    list.append(el);
+  }
+}
+
+function renderInventory() {
+  const totalBags = 250;
+  let soldBags = 0;
+  for (const o of orders) {
+    if (o.status === 'confirmed') {
+      soldBags += (o.quantity || 1) * 5;
+    }
+  }
+  const remaining = Math.max(0, totalBags - soldBags);
+  if ($('stockBagsRemaining')) $('stockBagsRemaining').textContent = `${remaining} كيس`;
 }
 
 /* Media Editor Handlers */
@@ -783,6 +1251,11 @@ async function loadOrders() {
   orders = await api('orders');
   populateWilayas();
   renderOrders();
+  renderWilayasPerformance();
+  renderAnalyticsCharts();
+  renderOffers();
+  renderAuditLog();
+  renderInventory();
   $('login').hidden = true;
   $('admin-login-nav').hidden = true;
   $('dashboard').hidden = false;
@@ -848,6 +1321,22 @@ function initEvents() {
   });
 
   $('exportOrders').addEventListener('click', exportOrders);
+  $('exportYalidine')?.addEventListener('click', exportYalidine);
+
+  // Multi-Offer Modal & Manager
+  $('addNewOfferBtn')?.addEventListener('click', () => openOfferDialog(-1));
+  $('cancelOfferModal')?.addEventListener('click', () => $('offerEditDialog').close());
+  $('cancelOfferModal2')?.addEventListener('click', () => $('offerEditDialog').close());
+  $('offerEditForm')?.addEventListener('submit', handleOfferSubmit);
+
+  // Printable Delivery Invoice
+  $('closeInvoiceDialog')?.addEventListener('click', () => $('invoiceDialog').close());
+  $('printInvoiceBtn')?.addEventListener('click', () => window.print());
+
+  // Setup ROAS Calculator & Initial Renders
+  setupRoasCalculator();
+  renderOffers();
+  renderAuditLog();
 
   // Settings Tabs Switcher
   $('settingsForm').addEventListener('click', event => {

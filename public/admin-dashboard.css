@@ -2133,3 +2133,541 @@ button, input, select, textarea {
     grid-template-columns: 1fr;
   }
 }
+
+/* ========================================================
+   Marketing Analytics, ROAS Calculator & Funnel
+   ======================================================== */
+.analytics-charts-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+@media (max-width: 900px) {
+  .analytics-charts-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.chart-card {
+  padding: 22px;
+}
+
+.chart-container {
+  position: relative;
+  width: 100%;
+  height: 270px;
+  margin-top: 14px;
+}
+
+.funnel-visual-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 14px;
+}
+
+.funnel-step {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.funnel-step-head {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--c-text-primary);
+}
+
+.funnel-bar {
+  height: 10px;
+  background-color: #F1ECE6;
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+}
+
+.funnel-bar span {
+  display: block;
+  height: 100%;
+  border-radius: var(--radius-pill);
+  transition: width 0.6s ease;
+}
+
+.f-bar-1 { background: linear-gradient(90deg, #EAA82C, #F3C363); }
+.f-bar-2 { background: linear-gradient(90deg, #EAA82C, #F7CF7D); }
+.f-bar-3 { background: linear-gradient(90deg, #EAA82C, #FADBA0); }
+.f-bar-4 { background: linear-gradient(90deg, #2E8B57, #66BB6A); }
+.f-bar-5 { background: linear-gradient(90deg, #1B5E20, #2E7D32); }
+
+.utm-card,
+.calculator-card {
+  margin-bottom: 24px;
+  padding: 22px;
+}
+
+.calc-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-top: 16px;
+}
+
+@media (max-width: 768px) {
+  .calc-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.calc-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.calc-results-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px;
+  background-color: #FAF7F2;
+  border-radius: var(--radius-md);
+  border: 1px solid #EFE6D8;
+}
+
+.calc-result-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+  color: var(--c-text-secondary);
+}
+
+.calc-result-item strong {
+  color: var(--c-text-primary);
+  font-weight: 800;
+}
+
+.calc-result-item.highlight {
+  background-color: #FFF4DE;
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid #F5DCB0;
+  margin-top: 6px;
+}
+
+.calc-result-item.highlight .net-profit-val {
+  color: #1F6B45;
+  font-size: 20px;
+  font-weight: 900;
+}
+
+/* ========================================================
+   Multi-Offers & Pricing Tier Management
+   ======================================================== */
+.offers-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 22px;
+  margin-top: 20px;
+}
+
+.offer-manage-card {
+  background-color: var(--c-white);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--c-card-border);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.offer-manage-card:hover {
+  border-color: var(--c-gold);
+  box-shadow: var(--shadow-md);
+}
+
+.offer-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.offer-card-top h3 {
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--c-text-primary);
+  line-height: 1.35;
+}
+
+.offer-badge-pill {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  font-size: 11px;
+  font-weight: 800;
+  background-color: #FEF7EC;
+  color: #B56F14;
+  border: 1px solid #FDE3B7;
+  white-space: nowrap;
+}
+
+.offer-price-row {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin: 4px 0;
+}
+
+.offer-price-number {
+  font-size: 32px;
+  font-weight: 900;
+  color: var(--c-dark);
+}
+
+.offer-price-unit {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--c-text-muted);
+}
+
+.offer-features-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 13.5px;
+  color: var(--c-text-secondary);
+}
+
+.offer-features-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.offer-features-list li::before {
+  content: '✓';
+  color: var(--c-gold);
+  font-weight: 800;
+}
+
+.offer-actions-footer {
+  display: flex;
+  gap: 10px;
+  margin-top: auto;
+  padding-top: 16px;
+  border-top: 1px solid var(--c-card-border);
+}
+
+.offer-actions-footer .button {
+  flex: 1;
+  min-height: 38px;
+  font-size: 13px;
+}
+
+/* ========================================================
+   Inventory & Stock
+   ======================================================== */
+.inventory-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.inventory-card {
+  padding: 24px;
+}
+
+.inv-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.inv-icon {
+  font-size: 30px;
+  background-color: #FAF7F2;
+  border: 1px solid #EFE6D8;
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+}
+
+.inv-head h3 {
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.inv-head small {
+  display: block;
+  font-size: 12px;
+  color: var(--c-text-muted);
+}
+
+.inv-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.inv-stat {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13.5px;
+  color: var(--c-text-secondary);
+}
+
+.inv-stat strong {
+  color: var(--c-text-primary);
+  font-weight: 800;
+}
+
+.stock-progress-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.stock-progress-bar {
+  height: 8px;
+  background-color: #EFE9E0;
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+}
+
+.stock-fill {
+  display: block;
+  height: 100%;
+  border-radius: var(--radius-pill);
+}
+
+.stock-fill.safe { background-color: #2E8B57; }
+.stock-fill.warning { background-color: #EAA82C; }
+.stock-fill.danger { background-color: #D9534F; }
+
+/* ========================================================
+   Printable Delivery Invoice & Bon de Livraison
+   ======================================================== */
+.printable-invoice {
+  background-color: var(--c-white);
+  padding: 24px;
+  border-radius: var(--radius-md);
+  border: 1px solid #E4DED6;
+  font-family: var(--font-family);
+  direction: rtl;
+  color: #1F1916;
+}
+
+.invoice-slip-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 2px dashed #D6C9B8;
+  padding-bottom: 16px;
+  margin-bottom: 18px;
+}
+
+.slip-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.slip-brand .brand-logo-icon {
+  font-size: 28px;
+}
+
+.slip-brand strong {
+  display: block;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.slip-brand small {
+  display: block;
+  font-size: 11px;
+  color: var(--c-text-muted);
+}
+
+.slip-meta {
+  text-align: left;
+}
+
+.slip-order-num {
+  font-size: 20px;
+  font-weight: 900;
+  color: var(--c-gold);
+}
+
+.slip-date {
+  font-size: 12px;
+  color: var(--c-text-muted);
+}
+
+.slip-customer-box {
+  background-color: #FAF8F5;
+  border: 1px solid #EFEAE3;
+  padding: 14px;
+  border-radius: var(--radius-sm);
+  margin-bottom: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.slip-row {
+  display: flex;
+  gap: 10px;
+  font-size: 13px;
+}
+
+.slip-row span {
+  color: var(--c-text-secondary);
+  min-width: 90px;
+}
+
+.slip-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 18px;
+}
+
+.slip-table th,
+.slip-table td {
+  border: 1px solid #E8E2D9;
+  padding: 10px 12px;
+  font-size: 13px;
+  text-align: right;
+}
+
+.slip-table th {
+  background-color: #F6F3EE;
+  font-weight: 800;
+}
+
+.slip-totals-box {
+  background-color: #FEF7EC;
+  border: 1px solid #FDE3B7;
+  padding: 14px 18px;
+  border-radius: var(--radius-sm);
+  margin-bottom: 20px;
+}
+
+.slip-total-line {
+  display: flex;
+  justify-content: space-between;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.slip-total-line strong {
+  font-size: 20px;
+  color: #1F1916;
+}
+
+.slip-ship-note {
+  display: block;
+  margin-top: 6px;
+  font-size: 11px;
+  color: #9F9790;
+}
+
+.slip-signatures {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 28px;
+  font-size: 12px;
+  color: var(--c-text-secondary);
+}
+
+.sign-line {
+  border-bottom: 1px solid #999;
+  width: 150px;
+  height: 45px;
+}
+
+@media print {
+  body * {
+    visibility: hidden !important;
+  }
+  #invoiceDialog,
+  #invoiceDialog *,
+  #printableInvoiceArea,
+  #printableInvoiceArea * {
+    visibility: visible !important;
+  }
+  #invoiceDialog {
+    position: fixed !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    border: 0 !important;
+    background: white !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+  }
+  #printableInvoiceArea {
+    position: absolute !important;
+    left: 10mm !important;
+    right: 10mm !important;
+    top: 10mm !important;
+    width: auto !important;
+    border: 0 !important;
+    padding: 0 !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+}
+
+/* ========================================================
+   Audit Log
+   ======================================================== */
+.audit-log-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+}
+
+.audit-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  background-color: #FAF9F7;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--c-card-border);
+}
+
+.audit-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.audit-badge {
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  font-size: 11px;
+  font-weight: 800;
+  background-color: #EAF5EE;
+  color: #1F6B45;
+}
+
+.audit-time {
+  font-size: 12px;
+  color: var(--c-text-muted);
+}
