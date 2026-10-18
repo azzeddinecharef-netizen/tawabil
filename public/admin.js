@@ -139,6 +139,7 @@ function setAdminView(view) {
   if (view === 'offers') renderOffers();
   if (view === 'wilayas') renderWilayasPerformance();
   if (view === 'audit') renderAuditLog();
+  if (view === 'inventory') renderInventory();
 
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -259,6 +260,9 @@ function makeStatusSelector(order) {
       });
       order.status = next;
       select.className = `inline-status-select status-${next}`;
+      if (next === 'confirmed' && previous !== 'confirmed') {
+        deductInventoryForConfirmedOrder(order);
+      }
       renderOrders();
       $('adminStatus').textContent = `تم تحديث حالة الطلب #${order.id} إلى «${orderStatuses.find(item => item[0] === next)[1]}».`;
     } catch (error) {
@@ -1139,16 +1143,522 @@ function renderAuditLog() {
   }
 }
 
+/* ========================================================
+   Inventory & Warehouse Management (إدارة المستودع والمخزون)
+   ======================================================== */
+
+const DEFAULT_INVENTORY = [
+  {
+    id: 'item_shawarma_2kg',
+    name: 'أكياس خلطة الشاورما (2 كلغ)',
+    category: 'finished',
+    categoryLabel: 'المنتج الرئيسي الجاهز للشحن',
+    icon: '📦',
+    unit: 'كيس',
+    quantity: 215,
+    minAlert: 40,
+    autoDeduct: 5,
+    desc: 'المنتج الأساسي الخاص بطلبيات المطاعم - خلطة توابل بسكرة الأصيلة'
+  },
+  {
+    id: 'item_gift_jar_50g',
+    name: 'علب الهدية الإضافية (50 غرام)',
+    category: 'promo',
+    categoryLabel: 'الهدايا الترويجية المرفقة مع العرض',
+    icon: '🎁',
+    unit: 'علبة',
+    quantity: 42,
+    minAlert: 45,
+    autoDeduct: 1,
+    desc: 'علب التوابل الخاصة كهدية تشجيعية للمطاعم في كل طلبية'
+  },
+  {
+    id: 'item_boxes_labels',
+    name: 'كراتين الشحن وبطاقات الشكر',
+    category: 'packaging',
+    categoryLabel: 'مواد التغليف والطباعة بعلامة بسكريا',
+    icon: '🏷️',
+    unit: 'كرتونة',
+    quantity: 240,
+    minAlert: 50,
+    autoDeduct: 1,
+    desc: 'كراتين كرتونية مقواة ومطبوعة لحماية المنتج أثناء الشحن مع ياليدين'
+  },
+  {
+    id: 'item_raw_spices_kg',
+    name: 'توابل مطحونة خام (مخزون احتياطي)',
+    category: 'raw',
+    categoryLabel: 'مواد أولية لتعبئة الأكياس',
+    icon: '🌶️',
+    unit: 'كلغ',
+    quantity: 650,
+    minAlert: 100,
+    autoDeduct: 0,
+    desc: 'شحنات الكمون، الفلفل الأسود، الهيل، والكزبرة الخام من مطاحن بسكرة'
+  }
+];
+
+const DEFAULT_INVENTORY_LOGS = [
+  {
+    id: 'log_init_1',
+    type: 'in',
+    typeLabel: 'توريد وارد',
+    itemId: 'item_shawarma_2kg',
+    itemName: 'أكياس خلطة الشاورما (2 كلغ)',
+    amount: '+150 كيس',
+    balanceAfter: '215 كيس',
+    reference: 'شحنة واردة من ورشة التعبئة (دفعة #24)',
+    time: 'اليوم، 09:30 ص'
+  },
+  {
+    id: 'log_init_2',
+    type: 'order',
+    typeLabel: 'خصم طلبية',
+    itemId: 'item_shawarma_2kg',
+    itemName: 'أكياس خلطة الشاورما (2 كلغ)',
+    amount: '-5 كيس',
+    balanceAfter: '65 كيس',
+    reference: 'تجهيز الطلبية المؤكدة #1024',
+    time: 'أمس، 04:15 م'
+  },
+  {
+    id: 'log_init_3',
+    type: 'audit',
+    typeLabel: 'تسوية جرد',
+    itemId: 'item_boxes_labels',
+    itemName: 'كراتين الشحن وبطاقات الشكر',
+    amount: 'ضبط (240 كرتونة)',
+    balanceAfter: '240 كرتونة',
+    reference: 'مطابقة الجرد الفعلي للمستودع الأسبوعي',
+    time: 'منذ 3 أيام'
+  }
+];
+
+function getInventory() {
+  try {
+    const raw = localStorage.getItem('tawabil_inventory');
+    if (raw) return JSON.parse(raw);
+  } catch (e) {
+    console.error('Failed to read inventory:', e);
+  }
+  return JSON.parse(JSON.stringify(DEFAULT_INVENTORY));
+}
+
+function saveInventory(items) {
+  try {
+    localStorage.setItem('tawabil_inventory', JSON.stringify(items));
+  } catch (e) {
+    console.error('Failed to save inventory:', e);
+  }
+}
+
+function getInventoryLogs() {
+  try {
+    const raw = localStorage.getItem('tawabil_inventory_logs');
+    if (raw) return JSON.parse(raw);
+  } catch (e) {
+    console.error('Failed to read inventory logs:', e);
+  }
+  return JSON.parse(JSON.stringify(DEFAULT_INVENTORY_LOGS));
+}
+
+function saveInventoryLogs(logs) {
+  try {
+    localStorage.setItem('tawabil_inventory_logs', JSON.stringify(logs.slice(0, 100)));
+  } catch (e) {
+    console.error('Failed to save inventory logs:', e);
+  }
+}
+
 function renderInventory() {
-  const totalBags = 250;
-  let soldBags = 0;
-  for (const o of orders) {
-    if (o.status === 'confirmed') {
-      soldBags += (o.quantity || 1) * 5;
+  const container = $('inventoryCardsContainer');
+  if (!container) return;
+
+  const items = getInventory();
+  const logs = getInventoryLogs();
+
+  // 1. Alert Banner Check
+  const lowItems = items.filter(it => Number(it.quantity) <= Number(it.minAlert));
+  const banner = $('stockAlertBanner');
+  const bannerText = $('stockAlertText');
+  if (banner && bannerText) {
+    if (lowItems.length > 0) {
+      banner.hidden = false;
+      const names = lowItems.map(it => `«${it.name}» (المتبقي: ${it.quantity} ${it.unit} / الحد الأدنى: ${it.minAlert})`).join('، ');
+      bannerText.textContent = `تنبيه نفاد وشيك لـ ${names}. يُنصح بإجراء توريد سريع (+ Restock).`;
+    } else {
+      banner.hidden = true;
     }
   }
-  const remaining = Math.max(0, totalBags - soldBags);
-  if ($('stockBagsRemaining')) $('stockBagsRemaining').textContent = `${remaining} كيس`;
+
+  // 2. KPI Ribbon
+  if ($('invTotalItemsCount')) $('invTotalItemsCount').textContent = items.length.toLocaleString('ar-DZ');
+  if ($('invLowStockCount')) {
+    $('invLowStockCount').textContent = lowItems.length.toLocaleString('ar-DZ');
+    $('invLowStockCount').style.color = lowItems.length > 0 ? '#DC2626' : 'var(--c-text-primary)';
+  }
+  const totalUnits = items.reduce((acc, it) => acc + (Number(it.quantity) || 0), 0);
+  if ($('invTotalUnitsCount')) $('invTotalUnitsCount').textContent = totalUnits.toLocaleString('ar-DZ');
+
+  // Days coverage estimated from primary finished good
+  const mainGood = items.find(it => it.category === 'finished') || items[0];
+  if ($('invDaysCoverage') && mainGood) {
+    const dailyEst = Math.max(1, Math.round((Number(mainGood.autoDeduct) || 5) * 2.4)); // approx 12 units/day
+    const days = Math.round(Number(mainGood.quantity) / dailyEst);
+    $('invDaysCoverage').textContent = `~${days} يوم`;
+  }
+
+  // 3. Render Inventory Cards
+  container.replaceChildren();
+
+  items.forEach(item => {
+    const qty = Number(item.quantity) || 0;
+    const minAlert = Number(item.minAlert) || 20;
+    const autoDeduct = Number(item.autoDeduct) || 0;
+    const isLow = qty <= minAlert;
+    const isWarning = qty <= minAlert * 1.5;
+
+    let statusPillClass = 'status-safe';
+    let statusText = '✓ مخزون ممتاز';
+    let fillClass = 'safe';
+    let adviceText = `تغطي الاحتياجات التشغيلية بكفاءة`;
+    let fillWidth = Math.min(100, Math.max(8, Math.round((qty / Math.max(qty, minAlert * 2.5)) * 100)));
+
+    if (isLow) {
+      statusPillClass = 'status-danger';
+      statusText = '⚠️ نفاد وشيك';
+      fillClass = 'danger';
+      adviceText = `المخزون تحت الحد الأدنى! اطلب دفعة توريد فوراً`;
+      fillWidth = Math.max(8, Math.round((qty / (minAlert * 1.5)) * 30));
+    } else if (isWarning) {
+      statusPillClass = 'status-warning';
+      statusText = '⚠️ يقارب من النفاد';
+      fillClass = 'warning';
+      adviceText = `يُنصح بجدولة توريد دفعة جديدة قريباً`;
+      fillWidth = Math.min(65, Math.max(25, Math.round((qty / (minAlert * 2)) * 60)));
+    }
+
+    const card = document.createElement('article');
+    card.className = `surface-card inventory-card ${isLow ? 'is-low-stock' : ''}`;
+
+    let productionInfo = '';
+    if (autoDeduct > 0) {
+      const batches = Math.floor(qty / autoDeduct);
+      productionInfo = `
+        <div class="inv-stat-row">
+          <span class="label">يكفي لإنتاج:</span>
+          <strong>${batches.toLocaleString('ar-DZ')} باقة (${autoDeduct} ${item.unit}/طلب)</strong>
+        </div>
+      `;
+    }
+
+    card.innerHTML = `
+      <div class="inv-head">
+        <div class="inv-head-main">
+          <div class="inv-icon-wrap">${item.icon || '📦'}</div>
+          <div class="inv-head-info">
+            <h3>${item.name}</h3>
+            <small>${item.categoryLabel || item.desc || 'صنف مسجل بالمستودع'}</small>
+          </div>
+        </div>
+      </div>
+
+      <div class="inv-body">
+        <div class="inv-stat-row">
+          <span class="label">المتبقي بالمستودع:</span>
+          <strong class="inv-qty-badge">${qty.toLocaleString('ar-DZ')} ${item.unit}</strong>
+        </div>
+        ${productionInfo}
+        <div class="inv-stat-row">
+          <span class="label">حد التنبيه الأدنى:</span>
+          <span>${minAlert} ${item.unit}</span>
+        </div>
+        <div class="inv-stat-row">
+          <span class="label">حالة المخزون:</span>
+          <span class="stock-status-pill ${statusPillClass}">${statusText}</span>
+        </div>
+
+        <div class="stock-progress-wrap">
+          <div class="stock-progress-bar">
+            <span style="width:${fillWidth}%" class="stock-fill ${fillClass}"></span>
+          </div>
+          <small>${adviceText}</small>
+        </div>
+      </div>
+
+      <div class="inv-card-actions">
+        <button type="button" class="btn-restock-quick" data-item-id="${item.id}">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+          <span>توريد سريع (+ Restock)</span>
+        </button>
+        <button type="button" class="btn-edit-item" data-item-id="${item.id}" title="تعديل بيانات الصنف أو الرصيد">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </button>
+        <button type="button" class="btn-delete-item" data-item-id="${item.id}" title="حذف المادة من المستودع">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+        </button>
+      </div>
+    `;
+
+    card.querySelector('.btn-restock-quick').addEventListener('click', () => openRestockDialog(item.id));
+    card.querySelector('.btn-edit-item').addEventListener('click', () => openStockItemDialog(item.id));
+    card.querySelector('.btn-delete-item').addEventListener('click', () => deleteStockItem(item.id));
+
+    container.append(card);
+  });
+
+  // 4. Render Ledger Table Rows
+  const ledgerRows = $('inventoryLedgerRows');
+  if (ledgerRows) {
+    ledgerRows.replaceChildren();
+    if (logs.length === 0) {
+      ledgerRows.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--c-text-muted);padding:24px;">لا توجد حركات مسجلة حالياً بالسجل.</td></tr>`;
+    } else {
+      logs.slice(0, 30).forEach(log => {
+        const tr = document.createElement('tr');
+        let badgeClass = 'ledger-badge-in';
+        let badgeIcon = '⬆';
+        if (log.type === 'out') { badgeClass = 'ledger-badge-out'; badgeIcon = '⬇'; }
+        else if (log.type === 'audit') { badgeClass = 'ledger-badge-audit'; badgeIcon = '⚖'; }
+        else if (log.type === 'order') { badgeClass = 'ledger-badge-order'; badgeIcon = '📦'; }
+
+        tr.innerHTML = `
+          <td><span class="ledger-badge ${badgeClass}">${badgeIcon} ${log.typeLabel || log.type}</span></td>
+          <td><strong>${log.itemName}</strong></td>
+          <td><strong style="direction:ltr;display:inline-block;">${log.amount}</strong></td>
+          <td>${log.balanceAfter !== undefined ? `${log.balanceAfter}` : '—'}</td>
+          <td><span style="font-size:12.5px;color:var(--c-text-secondary);">${log.reference || '—'}</span></td>
+          <td><span style="font-size:12px;color:var(--c-text-muted);">${log.time || '—'}</span></td>
+        `;
+        ledgerRows.append(tr);
+      });
+    }
+  }
+}
+
+/* Add / Edit Inventory Item Dialog */
+function openStockItemDialog(itemId = null) {
+  const form = $('stockItemForm');
+  if (!form) return;
+  form.reset();
+  form.elements.itemId.value = itemId || '';
+
+  const items = getInventory();
+  if (itemId) {
+    const item = items.find(it => it.id === itemId);
+    if (item) {
+      $('stockItemModalTitle').textContent = `تعديل مادة: ${item.name}`;
+      form.elements.itemName.value = item.name || '';
+      form.elements.itemCategory.value = item.category || 'finished';
+      form.elements.itemIcon.value = item.icon || '📦';
+      form.elements.itemUnit.value = item.unit || 'كيس';
+      form.elements.itemQuantity.value = item.quantity ?? 0;
+      form.elements.itemMinAlert.value = item.minAlert ?? 30;
+      form.elements.itemAutoDeduct.value = item.autoDeduct ?? 0;
+      form.elements.itemDesc.value = item.desc || '';
+    }
+  } else {
+    $('stockItemModalTitle').textContent = 'إضافة مادة جديدة للمستودع';
+    form.elements.itemCategory.value = 'finished';
+    form.elements.itemIcon.value = '📦';
+    form.elements.itemUnit.value = 'كيس';
+    form.elements.itemQuantity.value = 100;
+    form.elements.itemMinAlert.value = 30;
+    form.elements.itemAutoDeduct.value = 0;
+  }
+
+  $('stockItemModal')?.showModal();
+}
+
+function handleStockItemSubmit(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const itemId = form.elements.itemId.value;
+  const items = getInventory();
+
+  const categoryLabels = {
+    finished: 'المنتج الرئيسي الجاهز للشحن',
+    promo: 'الهدايا الترويجية المرفقة مع العرض',
+    packaging: 'مواد التغليف والطباعة بعلامة بسكريا',
+    raw: 'توابل وبهارات خام'
+  };
+
+  const itemData = {
+    id: itemId || `item_${Date.now()}`,
+    name: form.elements.itemName.value.trim(),
+    category: form.elements.itemCategory.value,
+    categoryLabel: categoryLabels[form.elements.itemCategory.value] || 'مادة مستودع',
+    icon: form.elements.itemIcon.value,
+    unit: form.elements.itemUnit.value.trim() || 'قطعة',
+    quantity: Number(form.elements.itemQuantity.value) || 0,
+    minAlert: Number(form.elements.itemMinAlert.value) || 10,
+    autoDeduct: Number(form.elements.itemAutoDeduct.value) || 0,
+    desc: form.elements.itemDesc.value.trim()
+  };
+
+  if (itemId) {
+    const idx = items.findIndex(it => it.id === itemId);
+    if (idx !== -1) {
+      items[idx] = itemData;
+      addAudit('تعديل مادة مخزون', `تم تحديث بيانات «${itemData.name}» (الرصيد: ${itemData.quantity} ${itemData.unit})`, 'مخزون');
+    }
+  } else {
+    items.push(itemData);
+    addAudit('إضافة مادة مخزون', `تمت إضافة مادة جديدة «${itemData.name}» برصيد ابتدائي ${itemData.quantity} ${itemData.unit}`, 'مخزون');
+  }
+
+  saveInventory(items);
+  $('stockItemModal')?.close();
+  renderInventory();
+  if ($('adminStatus')) $('adminStatus').textContent = `تم حفظ بيانات المادة «${itemData.name}» بنجاح.`;
+}
+
+function deleteStockItem(itemId) {
+  const items = getInventory();
+  if (items.length <= 1) {
+    alert('يجب الإبقاء على مادة واحدة على الأقل في المستودع.');
+    return;
+  }
+  const item = items.find(it => it.id === itemId);
+  if (!item) return;
+
+  if (!confirm(`هل أنت متأكد من رغبتك في حذف «${item.name}» من المستودع نهائياً؟`)) return;
+
+  const filtered = items.filter(it => it.id !== itemId);
+  saveInventory(filtered);
+  addAudit('حذف مادة مخزون', `تم حذف المادة «${item.name}» من المستودع`, 'مخزون');
+  renderInventory();
+  if ($('adminStatus')) $('adminStatus').textContent = `تم حذف المادة «${item.name}» من المستودع.`;
+}
+
+/* Quick Restock & Movement Dialog */
+function openRestockDialog(preselectedItemId = null) {
+  const form = $('stockRestockForm');
+  const select = $('restockItemSelect');
+  if (!form || !select) return;
+
+  form.reset();
+  select.replaceChildren();
+
+  const items = getInventory();
+  items.forEach(item => {
+    const opt = document.createElement('option');
+    opt.value = item.id;
+    opt.textContent = `${item.icon || '📦'} ${item.name} (الرصيد الحالي: ${item.quantity} ${item.unit})`;
+    select.append(opt);
+  });
+
+  if (preselectedItemId) {
+    select.value = preselectedItemId;
+  }
+
+  $('stockRestockModal')?.showModal();
+}
+
+function handleRestockSubmit(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const itemId = form.elements.restockItemId.value;
+  const restockType = form.elements.restockType.value;
+  const amount = Number(form.elements.restockAmount.value) || 0;
+  const note = form.elements.restockNote.value.trim() || 'حركة مستودع';
+
+  if (amount <= 0 && restockType !== 'audit') {
+    alert('الرجاء إدخال كمية صحيحة أكبر من الصفر.');
+    return;
+  }
+
+  const items = getInventory();
+  const logs = getInventoryLogs();
+  const item = items.find(it => it.id === itemId);
+
+  if (!item) {
+    alert('لم يتم العثور على المادة المحددة.');
+    return;
+  }
+
+  let formattedAmount = '';
+  let typeLabel = '';
+
+  if (restockType === 'in') {
+    item.quantity = (Number(item.quantity) || 0) + amount;
+    formattedAmount = `+${amount}`;
+    typeLabel = 'توريد وارد';
+  } else if (restockType === 'out') {
+    item.quantity = Math.max(0, (Number(item.quantity) || 0) - amount);
+    formattedAmount = `-${amount}`;
+    typeLabel = 'صرف يدوي';
+  } else if (restockType === 'audit') {
+    item.quantity = amount;
+    formattedAmount = `ضبط (${amount})`;
+    typeLabel = 'تسوية جرد';
+  }
+
+  const newLog = {
+    id: `log_${Date.now()}`,
+    type: restockType,
+    typeLabel,
+    itemId: item.id,
+    itemName: item.name,
+    amount: `${formattedAmount} ${item.unit}`,
+    balanceAfter: `${item.quantity} ${item.unit}`,
+    reference: note,
+    time: new Date().toLocaleString('ar-DZ', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+  };
+
+  logs.unshift(newLog);
+
+  saveInventory(items);
+  saveInventoryLogs(logs);
+
+  addAudit('حركة مخزون', `تسجيل ${typeLabel} لـ «${item.name}» (${formattedAmount} ${item.unit}) - ${note}`, 'مستودع');
+
+  $('stockRestockModal')?.close();
+  renderInventory();
+  if ($('adminStatus')) $('adminStatus').textContent = `تم تسجيل حركة ${typeLabel} للمادة «${item.name}» بنجاح.`;
+}
+
+function clearInventoryLogs() {
+  if (!confirm('هل أنت متأكد من مسح سجل حركات التوريد والمخزون؟ لن يتم حذف أرصدة المواد الحالية.')) return;
+  saveInventoryLogs([]);
+  renderInventory();
+  addAudit('مسح سجل الحركات', 'تم مسح سجل حركات التوريد والمخزون القديمة', 'مستودع');
+}
+
+/* Automated Stock Deduction per Confirmed Order */
+function deductInventoryForConfirmedOrder(order) {
+  if (!order) return;
+  const items = getInventory();
+  const logs = getInventoryLogs();
+  let deductedAny = false;
+  const orderQty = Number(order.quantity) || 1;
+
+  items.forEach(item => {
+    const autoDeduct = Number(item.autoDeduct) || 0;
+    if (autoDeduct > 0) {
+      const deduction = autoDeduct * orderQty;
+      item.quantity = Math.max(0, (Number(item.quantity) || 0) - deduction);
+
+      logs.unshift({
+        id: `log_ord_${Date.now()}_${item.id}`,
+        type: 'order',
+        typeLabel: 'خصم طلبية',
+        itemId: item.id,
+        itemName: item.name,
+        amount: `-${deduction} ${item.unit}`,
+        balanceAfter: `${item.quantity} ${item.unit}`,
+        reference: `خصم تلقائي لتجهيز الطلبية المؤكدة #${order.id} (${order.fullName || 'عميل'})`,
+        time: 'الآن'
+      });
+      deductedAny = true;
+    }
+  });
+
+  if (deductedAny) {
+    saveInventory(items);
+    saveInventoryLogs(logs);
+    if (activeView === 'inventory') renderInventory();
+  }
 }
 
 /* Media Editor Handlers */
@@ -1333,10 +1843,22 @@ function initEvents() {
   $('closeInvoiceDialog')?.addEventListener('click', () => $('invoiceDialog').close());
   $('printInvoiceBtn')?.addEventListener('click', () => window.print());
 
+  // Inventory & Restock Modals & Actions
+  $('openRestockModalBtn')?.addEventListener('click', () => openRestockDialog());
+  $('openNewStockItemBtn')?.addEventListener('click', () => openStockItemDialog());
+  $('cancelStockItemModal')?.addEventListener('click', () => $('stockItemModal')?.close());
+  $('cancelStockItemModal2')?.addEventListener('click', () => $('stockItemModal')?.close());
+  $('stockItemForm')?.addEventListener('submit', handleStockItemSubmit);
+  $('cancelRestockModal')?.addEventListener('click', () => $('stockRestockModal')?.close());
+  $('cancelRestockModal2')?.addEventListener('click', () => $('stockRestockModal')?.close());
+  $('stockRestockForm')?.addEventListener('submit', handleRestockSubmit);
+  $('clearInventoryLogsBtn')?.addEventListener('click', clearInventoryLogs);
+
   // Setup ROAS Calculator & Initial Renders
   setupRoasCalculator();
   renderOffers();
   renderAuditLog();
+  renderInventory();
 
   // Settings Tabs Switcher
   $('settingsForm').addEventListener('click', event => {
@@ -1439,7 +1961,11 @@ function initEvents() {
         body: JSON.stringify(body)
       });
       const order = orders.find(item => item.id === orderId);
+      const prevStatus = order ? order.status : 'new';
       if (order) Object.assign(order, body);
+      if (body.status === 'confirmed' && prevStatus !== 'confirmed') {
+        deductInventoryForConfirmedOrder(order || body);
+      }
       $('editOrderDialog').close();
       renderOrders();
       $('adminStatus').textContent = `تم تحديث بيانات الطلب #${orderId} بنجاح.`;

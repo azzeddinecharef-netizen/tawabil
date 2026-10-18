@@ -715,59 +715,96 @@
         <!-- ==============================================
              VIEW 6: INVENTORY & STOCK (المخزون)
              ============================================== -->
+        <!-- ==============================================
+             VIEW 6: INVENTORY & STOCK (المخزون والمستودع)
+             ============================================== -->
         <section class="admin-view" data-view-panel="inventory" hidden>
           <div class="view-header">
-            <h1 class="view-title">إدارة المخزون والتنبيهات (Inventory & Stock)</h1>
-            <p class="view-subtitle">تتبع كميات الأكياس والتوابل المتوفرة وتنبيهات نفاد المخزون لتجنب انقطاع التوصيل.</p>
+            <div class="orders-title-wrap">
+              <div>
+                <h1 class="view-title">إدارة المستودع والمخزون الحي (Inventory & Stock)</h1>
+                <p class="view-subtitle">تتبع وضبط كميات الأكياس والتوابل، تسجيل شحنات التوريد الجديدة، ومراقبة تنبيهات النفاد اللحظية.</p>
+              </div>
+              <div class="header-actions-group">
+                <button id="openRestockModalBtn" class="button button-gold" type="button">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+                  <span>توريد كمية جديدة (+ Restock)</span>
+                </button>
+                <button id="openNewStockItemBtn" class="button button-white" type="button">
+                  <span>＋ إضافة مادة جديدة</span>
+                </button>
+              </div>
+            </div>
           </div>
 
-          <div class="inventory-grid">
-            <article class="surface-card inventory-card">
-              <div class="inv-head">
-                <span class="inv-icon">📦</span>
-                <div>
-                  <h3>أكياس خلطة الشاورما (2 كلغ)</h3>
-                  <small>المنتج الرئيسي الجاهز للشحن</small>
-                </div>
+          <!-- Inventory Alerts Banner (ظهر تلقائياً إذا كانت مادة أقل من حد التنبيه) -->
+          <div id="stockAlertBanner" class="stock-alert-banner" hidden>
+            <div class="alert-banner-content">
+              <span class="alert-icon">⚠️</span>
+              <div>
+                <strong>تنبيه انخفاض المخزون:</strong>
+                <span id="stockAlertText">توجد مواد اقتربت من النفاد في المستودع ويُنصح بإعادة التوريد سريعاً.</span>
               </div>
-              <div class="inv-body">
-                <div class="inv-stat"><span class="label">المتبقي في المستودع:</span><strong id="stockBagsRemaining">185 كيس</strong></div>
-                <div class="inv-stat"><span class="label">يكفي لإنتاج:</span><strong>37 باقة (عرض 5 أكياس)</strong></div>
-                <div class="inv-stat"><span class="label">معدل الاستهلاك اليومي:</span><strong>~12 كيس / يوم</strong></div>
-                <div class="stock-progress-wrap"><div class="stock-progress-bar"><span style="width:68%" class="stock-fill safe"></span></div><small>المخزون كافٍ لمدة 15 يوماً القادمة</small></div>
-              </div>
+            </div>
+          </div>
+
+          <!-- Inventory KPI Ribbon -->
+          <div class="stats-grid inventory-kpis">
+            <article class="stat-card">
+              <div class="stat-head"><span class="stat-label">المواد المسجلة بالمستودع</span><span class="stat-icon icon-box">📦</span></div>
+              <strong id="invTotalItemsCount" class="stat-number">4</strong>
+              <div class="stat-foot-pill">أصناف مفروزة في المستودع</div>
             </article>
 
-            <article class="surface-card inventory-card">
-              <div class="inv-head">
-                <span class="inv-icon">🎁</span>
-                <div>
-                  <h3>علب الهدية الإضافية (50 غرام)</h3>
-                  <small>الهدايا الترويجية المرفقة مع عرض 5 أكياس</small>
-                </div>
-              </div>
-              <div class="inv-body">
-                <div class="inv-stat"><span class="label">المتبقي:</span><strong>42 علبة</strong></div>
-                <div class="inv-stat"><span class="label">حالة التنبيه:</span><span class="order-status-pill status-new">⚠️ يقترب من النفاد</span></div>
-                <div class="stock-progress-wrap"><div class="stock-progress-bar"><span style="width:28%" class="stock-fill warning"></span></div><small>يُنصح بطلب دفعة جديدة من العلب</small></div>
-              </div>
+            <article class="stat-card">
+              <div class="stat-head"><span class="stat-label">حالة التنبيهات والنفاد</span><span class="stat-icon icon-rejected">⚠️</span></div>
+              <strong id="invLowStockCount" class="stat-number">0</strong>
+              <div class="stat-foot-pill pill-warning">مواد تحت الحد الأدنى</div>
             </article>
 
-            <article class="surface-card inventory-card">
-              <div class="inv-head">
-                <span class="inv-icon">🏷️</span>
-                <div>
-                  <h3>كراتين الشحن وبطاقات الشكر</h3>
-                  <small>مواد التغليف الخاصة بعلامة بسكريا</small>
-                </div>
-              </div>
-              <div class="inv-body">
-                <div class="inv-stat"><span class="label">المتبقي:</span><strong>240 كرتونة</strong></div>
-                <div class="inv-stat"><span class="label">الحالة:</span><span class="order-status-pill status-confirmed">✓ مخزون ممتاز</span></div>
-                <div class="stock-progress-wrap"><div class="stock-progress-bar"><span style="width:85%" class="stock-fill safe"></span></div><small>تغطي احتياجات الشحن لـ 4 أسابيع</small></div>
-              </div>
+            <article class="stat-card">
+              <div class="stat-head"><span class="stat-label">إجمالي الوحدات المتوفرة</span><span class="stat-icon icon-confirmed">🏷️</span></div>
+              <strong id="invTotalUnitsCount" class="stat-number">0</strong>
+              <div class="stat-foot-pill pill-success">مجموع قطع وأكياس المخزون</div>
+            </article>
+
+            <article class="stat-card">
+              <div class="stat-head"><span class="stat-label">أيام التغطية التقديرية</span><span class="stat-icon icon-box">📅</span></div>
+              <strong id="invDaysCoverage" class="stat-number">~18 يوم</strong>
+              <div class="stat-foot-pill">بناءً على وتيرة الطلبات المؤكدة</div>
             </article>
           </div>
+
+          <!-- Interactive Inventory Cards Grid -->
+          <div id="inventoryCardsContainer" class="inventory-grid"></div>
+
+          <!-- Stock Movement Ledger / History Table -->
+          <article class="surface-card inventory-ledger-card" style="margin-top:24px;">
+            <div class="card-heading">
+              <div>
+                <h2>سجل حركات المخزون والتوريد (Stock Movement Ledger)</h2>
+                <p>سجل تفصيلي لعمليات التوريد الواردة، والخصم التلقائي مع الطلبيات المؤكدة، والتعديلات اليدوية.</p>
+              </div>
+              <button id="clearInventoryLogsBtn" class="button button-white" type="button" style="font-size:12px;padding:6px 12px;min-height:32px;">
+                مسح السجل القديم
+              </button>
+            </div>
+            <div class="table-responsive-wrap">
+              <table class="figma-orders-table">
+                <thead>
+                  <tr>
+                    <th>نوع الحركة</th>
+                    <th>المادة</th>
+                    <th>الكمية المنقولة</th>
+                    <th>الرصيد بعد الحركة</th>
+                    <th>البيان / المرجع</th>
+                    <th>الوقت والتاريخ</th>
+                  </tr>
+                </thead>
+                <tbody id="inventoryLedgerRows"></tbody>
+              </table>
+            </div>
+          </article>
         </section>
 
         <!-- ==============================================
@@ -1181,6 +1218,131 @@
                 <span>✓</span> حفظ الباقة
               </button>
               <button id="cancelOfferModal2" class="button button-white" type="button">إلغاء</button>
+            </div>
+          </form>
+        </dialog>
+
+        <!-- ==============================================
+             DIALOG 5: STOCK ITEM MODAL (إضافة / تعديل مادة)
+             ============================================== -->
+        <dialog id="stockItemModal" class="figma-modal" aria-labelledby="stockItemModalTitle">
+          <form id="stockItemForm" class="modal-form-wrap">
+            <input type="hidden" name="itemId">
+            <div class="modal-header">
+              <button id="cancelStockItemModal" class="modal-close-circle" type="button" aria-label="إغلاق">×</button>
+              <div>
+                <h2 id="stockItemModalTitle">إضافة مادة للمستودع</h2>
+                <p class="modal-sub">حدد اسم المادة، الأيقونة، الرصيد الابتدائي، وحد التنبيه لنفاد المخزون.</p>
+              </div>
+            </div>
+
+            <div class="modal-fields-grid">
+              <label class="modal-field full-width">
+                <span>اسم المادة أو الصنف (مثال: أكياس خلطة الشاورما 2 كلغ)</span>
+                <input name="itemName" type="text" required placeholder="مثال: أكياس خلطة الشاورما (2 كلغ)">
+              </label>
+
+              <label class="modal-field">
+                <span>التصنيف</span>
+                <select name="itemCategory">
+                  <option value="finished">منتج جاهز للشحن</option>
+                  <option value="promo">هدايا وعينات ترويجية</option>
+                  <option value="packaging">مواد التغليف والكراتين</option>
+                  <option value="raw">توابل وبهارات خام</option>
+                </select>
+              </label>
+
+              <label class="modal-field">
+                <span>الأيقونة المعبرة</span>
+                <select name="itemIcon">
+                  <option value="📦">📦 كرتونة / طرد جاهز</option>
+                  <option value="🎁">🎁 علبة هدية</option>
+                  <option value="🏷️">🏷️ بطاقات وشحن وتغليف</option>
+                  <option value="🌶️">🌶️ توابل وبهارات</option>
+                  <option value="⚖️">⚖️ كيس مكيّل</option>
+                  <option value="🧂">🧂 قارورة زجاجية</option>
+                </select>
+              </label>
+
+              <label class="modal-field">
+                <span>وحدة القياس</span>
+                <input name="itemUnit" type="text" required placeholder="مثال: كيس / علبة / كرتونة">
+              </label>
+
+              <label class="modal-field">
+                <span>الرصيد الابتدائي / الحالي</span>
+                <input name="itemQuantity" type="number" min="0" required placeholder="185">
+              </label>
+
+              <label class="modal-field">
+                <span>حد التنبيه الأدنى (Low Stock Alert)</span>
+                <input name="itemMinAlert" type="number" min="1" required placeholder="30">
+              </label>
+
+              <label class="modal-field">
+                <span>الخصم التلقائي عند تأكيد طلبية</span>
+                <input name="itemAutoDeduct" type="number" min="0" step="1" value="0" placeholder="0 (أو 5 أكياس لكل طلب)">
+              </label>
+
+              <label class="modal-field full-width">
+                <span>وصف مختصر أو مصدر التوريد</span>
+                <input name="itemDesc" type="text" placeholder="مثال: المنتج الرئيسي الخاص بطلبيات المطاعم - ورشة بسكرة">
+              </label>
+            </div>
+
+            <div class="modal-footer">
+              <button class="button button-gold" type="submit">
+                <span>✓</span> حفظ المادة بالمستودع
+              </button>
+              <button id="cancelStockItemModal2" class="button button-white" type="button">إلغاء</button>
+            </div>
+          </form>
+        </dialog>
+
+        <!-- ==============================================
+             DIALOG 6: QUICK RESTOCK MODAL (توريد كمية جديدة)
+             ============================================== -->
+        <dialog id="stockRestockModal" class="figma-modal" aria-labelledby="stockRestockModalTitle">
+          <form id="stockRestockForm" class="modal-form-wrap">
+            <div class="modal-header">
+              <button id="cancelRestockModal" class="modal-close-circle" type="button" aria-label="إغلاق">×</button>
+              <div>
+                <h2 id="stockRestockModalTitle">تسجيل حركة توريد أو تعديل مخزون</h2>
+                <p class="modal-sub">سجل دفعة بضاعة جديدة واردة إلى المستودع أو اضبط الجرد يدوياً.</p>
+              </div>
+            </div>
+
+            <div class="modal-fields-grid">
+              <label class="modal-field full-width">
+                <span>المادة المستهدفة</span>
+                <select name="restockItemId" id="restockItemSelect" required></select>
+              </label>
+
+              <label class="modal-field">
+                <span>نوع الحركة</span>
+                <select name="restockType" id="restockTypeSelect">
+                  <option value="in">توريد وارد جديد (+ إضافة رصيد)</option>
+                  <option value="audit">ضبط جرد فعلي (= تعيين رصيد مطابق)</option>
+                  <option value="out">صرف / إتلاف يدوي (- إنقاص رصيد)</option>
+                </select>
+              </label>
+
+              <label class="modal-field">
+                <span>الكمية (الوحدات)</span>
+                <input name="restockAmount" id="restockAmountInput" type="number" min="1" required placeholder="مثال: 50">
+              </label>
+
+              <label class="modal-field full-width">
+                <span>البيان / رقم الوصل أو المورد</span>
+                <input name="restockNote" type="text" required placeholder="مثال: شحنة واردة من المطحنة رقم وصل #92">
+              </label>
+            </div>
+
+            <div class="modal-footer">
+              <button class="button button-gold" type="submit">
+                <span>✓</span> تأكيد وتسجيل الحركة
+              </button>
+              <button id="cancelRestockModal2" class="button button-white" type="button">إلغاء</button>
             </div>
           </form>
         </dialog>
