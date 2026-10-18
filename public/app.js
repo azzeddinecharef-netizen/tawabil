@@ -55,32 +55,7 @@ function mediaCard(item, index) {
   info.append(tag, heading); card.append(frame, info); return card;
 }
 
-fetch(`${API}?route=settings`).then(async response => {
-  const result = await response.json(); if (!response.ok) throw Error(result.error); return result;
-}).then(settings => {
-  if (settings.title) document.title = `${settings.title} | البسكرية للتوابل`;
-  if (settings.description) { const description = document.querySelector('.elb-lead'); if (description) description.textContent = settings.description; }
-  const items = Array.isArray(settings.media) ? settings.media.filter(item => item && ['video', 'audio'].includes(item.kind) && item.url) : [];
-  if (items.length) { $('mediaGrid').replaceChildren(...items.map(mediaCard)); $('elb-media').hidden = false; }
-}).catch(() => {});
-
 const form = $('elb-form');
-try {
-  const customOffers = JSON.parse(localStorage.getItem('tawabil_offers'));
-  if (Array.isArray(customOffers) && customOffers.length > 0) {
-    const container = form.querySelector('.elb-qty-pick');
-    if (container) {
-      container.innerHTML = '<legend>اختر العرض</legend>' + customOffers.map((o, idx) => `
-        <label class="elb-opt">
-          <input type="radio" name="offers" value="${o.id || 'offer_' + idx}" data-price="${o.price}" data-kg="${String(o.kg || '2').replace(/[^\d.]/g, '') || '2'}" data-free="${o.freeShipping ? '1' : '0'}" data-label="${o.title}" ${idx === 0 ? 'checked' : ''}>
-          <span><b>${o.title} ${o.badge ? `<i class="elb-tag">${o.badge}</i>` : ''}</b><small>${o.kg} ${o.gift ? '+ ' + o.gift : ''} ${o.freeShipping ? '+ توصيل مجاني' : ''}</small></span>
-          <em>${Number(o.price).toLocaleString('ar-DZ')} دج</em>
-        </label>
-      `).join('');
-    }
-  }
-} catch {}
-
 let offerInputs = [...form.querySelectorAll('input[name="offers"]')];
 const selectedOffer = () => offerInputs.find(input => input.checked) || offerInputs[0];
 const refreshTotal = () => {
@@ -89,8 +64,58 @@ const refreshTotal = () => {
   $('elb-total').textContent = `${Number(offer.dataset.price).toLocaleString('ar-DZ')} دج`;
   $('elb-ship').textContent = offer.dataset.free === '1' ? 'التوصيل مجاني مع هذا العرض.' : 'سعر التوصيل يُؤكّد معك هاتفيًا حسب ولايتك.';
 };
+
+function renderLandingOffers(offersList) {
+  if (!Array.isArray(offersList) || offersList.length === 0) return;
+  const container = form.querySelector('.elb-qty-pick');
+  if (!container) return;
+  container.innerHTML = '<legend>اختر العرض</legend>' + offersList.map((o, idx) => `
+    <label class="elb-opt">
+      <input type="radio" name="offers" value="${o.id || 'offer_' + idx}" data-price="${o.price}" data-kg="${String(o.kg || '2').replace(/[^\d.]/g, '') || '2'}" data-free="${o.freeShipping ? '1' : '0'}" data-label="${o.title}" ${idx === 0 ? 'checked' : ''}>
+      <span><b>${o.title} ${o.badge ? `<i class="elb-tag">${o.badge}</i>` : ''}</b><small>${o.kg} ${o.gift ? '+ ' + o.gift : ''} ${o.freeShipping ? '+ توصيل مجاني' : ''}</small></span>
+      <em>${Number(o.price).toLocaleString('ar-DZ')} دج</em>
+    </label>
+  `).join('');
+
+  offerInputs = [...form.querySelectorAll('input[name="offers"]')];
+  offerInputs.forEach(input => input.addEventListener('change', refreshTotal));
+  refreshTotal();
+}
+
+// Initial render from local cache if available
+try {
+  const cachedOffers = JSON.parse(localStorage.getItem('tawabil_offers'));
+  if (Array.isArray(cachedOffers) && cachedOffers.length > 0) {
+    renderLandingOffers(cachedOffers);
+  }
+} catch {}
+
 offerInputs.forEach(input => input.addEventListener('change', refreshTotal));
 refreshTotal();
+
+fetch(`${API}?route=settings`).then(async response => {
+  const result = await response.json(); if (!response.ok) throw Error(result.error); return result;
+}).then(settings => {
+  if (settings.title) document.title = `${settings.title} | البسكرية للتوابل`;
+  let descText = settings.description || '';
+  const match = descText.match(/<!--TAWABIL_CLOUD_SYNC:(.*?)-->/);
+  if (match) {
+    try {
+      const syncData = JSON.parse(match[1]);
+      if (Array.isArray(syncData.offers) && syncData.offers.length > 0) {
+        try { localStorage.setItem('tawabil_offers', JSON.stringify(syncData.offers)); } catch {}
+        renderLandingOffers(syncData.offers);
+      }
+    } catch (e) {}
+    descText = descText.replace(/\s*<!--TAWABIL_CLOUD_SYNC:.*?-->/gs, '').trim();
+  }
+  if (descText) {
+    const description = document.querySelector('.elb-lead');
+    if (description) description.textContent = descText;
+  }
+  const items = Array.isArray(settings.media) ? settings.media.filter(item => item && ['video', 'audio'].includes(item.kind) && item.url) : [];
+  if (items.length) { $('mediaGrid').replaceChildren(...items.map(mediaCard)); $('elb-media').hidden = false; }
+}).catch(() => {});
 
 const wilayas = window.ELB_DZ || [];
 const wilayaSelect = $('f-wilaya');

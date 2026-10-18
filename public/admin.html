@@ -10,10 +10,10 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
-  <link rel="stylesheet" href="admin-dashboard.css?v=admin-stock-v5">
+  <link rel="stylesheet" href="admin-dashboard.css?v=admin-cloud-sync-v6">
   <script src="assets/chart.umd.min.js"></script>
   <script src="wilayas.js"></script>
-  <script src="admin.js?v=admin-stock-v5" defer></script>
+  <script src="admin.js?v=admin-cloud-sync-v6" defer></script>
 </head>
 <body class="admin-page">
 
@@ -181,6 +181,10 @@
             <span class="topbar-kicker">مساحة العمل / <strong id="pageCrumb">نظرة عامة</strong></span>
           </div>
           <div class="topbar-actions">
+            <div id="cloudSyncIndicator" class="cloud-sync-pill" title="حالة المزامنة السحابية الفورية مع كافة الإداريين وصفحة المتجر">
+              <span class="sync-dot"></span>
+              <span id="cloudSyncText">تزامن سحابي فوري ⚡</span>
+            </div>
             <div class="last-updated-wrap">
               <span id="lastUpdated" class="last-updated">—</span>
               <button id="refresh" class="icon-button" type="button" aria-label="تحديث الطلبات" title="تحديث البيانات">

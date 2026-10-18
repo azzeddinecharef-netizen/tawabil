@@ -14,6 +14,23 @@ let currentPage = 1;
 let currentTemplateOrderId = null;
 let token = sessionStorage.getItem('courseAdminToken') || '';
 
+/* Cloud Real-Time State */
+let currentCloudSettings = {
+  title: 'باك نكهات بسكرة',
+  description: '',
+  price: '15,000 دج',
+  media: []
+};
+let lastCloudSyncTimestamp = Number(localStorage.getItem('tawabil_sync_time') || 0);
+let isPullingFromCloud = false;
+let cloudPushTimeout = null;
+let syncBroadcastChannel = null;
+try {
+  if (typeof BroadcastChannel !== 'undefined') {
+    syncBroadcastChannel = new BroadcastChannel('tawabil_sync');
+  }
+} catch {}
+
 const orderStatuses = [
   ['new', 'جديدة'],
   ['confirmed', 'مؤكدة'],
@@ -802,6 +819,7 @@ function saveOffers() {
     localStorage.setItem('tawabil_offers', JSON.stringify(storeOffers));
   } catch {}
   renderOffers();
+  scheduleCloudPush();
 }
 
 function renderOffers() {
@@ -1257,6 +1275,7 @@ function saveInventory(items) {
   } catch (e) {
     console.error('Failed to save inventory:', e);
   }
+  scheduleCloudPush();
 }
 
 function getInventoryLogs() {
@@ -1282,6 +1301,7 @@ function saveInventoryLogs(logs) {
   } catch (e) {
     console.error('Failed to save inventory logs:', e);
   }
+  scheduleCloudPush();
 }
 
 function renderInventory() {
@@ -1767,15 +1787,219 @@ function readMediaEntries() {
   }));
 }
 
+/* Cloud Real-Time Synchronization Engine */
+function showSyncBadge(msg = 'تزامن سحابي فوري ⚡', type = 'normal') {
+  const indicator = $('cloudSyncIndicator');
+  const text = $('cloudSyncText');
+  if (!indicator || !text) return;
+  text.textContent = msg;
+  indicator.classList.remove('is-syncing', 'is-updated');
+  if (type === 'syncing') {
+    indicator.classList.add('is-syncing');
+  } else if (type === 'updated') {
+    indicator.classList.add('is-updated');
+    setTimeout(() => {
+      text.textContent = 'تزامن سحابي فوري ⚡';
+      indicator.classList.remove('is-updated');
+    }, 3200);
+  }
+}
+
+function buildCloudSyncTag() {
+  const currentInv = getInventory();
+  const currentLogs = getInventoryLogs().slice(0, 5);
+  const syncPayload = {
+    v: 1,
+    t: Date.now(),
+    offers: storeOffers,
+    inv: currentInv,
+    logs: currentLogs
+  };
+  return `<!--TAWABIL_CLOUD_SYNC:${JSON.stringify(syncPayload)}-->`;
+}
+
+function parseCloudSyncFromDescription(descString) {
+  if (!descString || typeof descString !== 'string') return false;
+  const match = descString.match(/<!--TAWABIL_CLOUD_SYNC:(.*?)-->/);
+  if (!match) return false;
+  try {
+    const syncData = JSON.parse(match[1]);
+    if (!syncData || !syncData.t) return false;
+    if (syncData.t <= lastCloudSyncTimestamp) return false;
+
+    lastCloudSyncTimestamp = syncData.t;
+    try { localStorage.setItem('tawabil_sync_time', String(lastCloudSyncTimestamp)); } catch {}
+
+    isPullingFromCloud = true;
+    try {
+      let offersChanged = false;
+      let invChanged = false;
+
+      if (Array.isArray(syncData.offers) && syncData.offers.length > 0) {
+        storeOffers = syncData.offers;
+        try { localStorage.setItem('tawabil_offers', JSON.stringify(storeOffers)); } catch {}
+        renderOffers();
+        offersChanged = true;
+      }
+
+      if (Array.isArray(syncData.inv) && syncData.inv.length > 0) {
+        try { localStorage.setItem('tawabil_inventory', JSON.stringify(syncData.inv)); } catch {}
+        if (Array.isArray(syncData.logs) && syncData.logs.length > 0) {
+          try { localStorage.setItem('tawabil_inventory_logs', JSON.stringify(syncData.logs.slice(0, 100))); } catch {}
+        }
+        renderInventory();
+        invChanged = true;
+      }
+
+      if (offersChanged || invChanged) {
+        showSyncBadge('تم التحديث اللحظي من الإدارة ⚡', 'updated');
+        if ($('adminStatus')) $('adminStatus').textContent = 'تم استلام وتحديث العروض والمخزون سحابياً من الإدارة الأخرى ⚡';
+      }
+    } finally {
+      isPullingFromCloud = false;
+    }
+    return true;
+  } catch (err) {
+    console.warn('Failed to parse cloud sync payload:', err);
+    return false;
+  }
+}
+
+async function pullCloudSync() {
+  try {
+    const response = await fetch(`${API}?route=settings`, {
+      cache: 'no-store',
+      headers: { 'Cache-Control': 'no-cache' }
+    });
+    if (!response.ok) return;
+    const data = await response.json();
+    if (!data || !data.description) return;
+
+    currentCloudSettings = {
+      title: data.title || 'باك نكهات بسكرة',
+      price: data.price || '15,000 دج',
+      media: Array.isArray(data.media) ? data.media : [],
+      description: data.description
+    };
+
+    const hasNewUpdate = parseCloudSyncFromDescription(data.description);
+    if (hasNewUpdate) {
+      const descInput = $('settingsDescInput');
+      if (descInput && document.activeElement !== descInput) {
+        const cleanDesc = data.description.replace(/\s*<!--TAWABIL_CLOUD_SYNC:.*?-->/gs, '').trim();
+        descInput.value = cleanDesc;
+      }
+    }
+  } catch (err) {
+    // Network blip during polling
+  }
+}
+
+function scheduleCloudPush() {
+  if (isPullingFromCloud) return;
+  const currentToken = token || sessionStorage.getItem('courseAdminToken');
+  if (!currentToken) return;
+
+  showSyncBadge('جارٍ التزامن السحابي...', 'syncing');
+  if (cloudPushTimeout) clearTimeout(cloudPushTimeout);
+  cloudPushTimeout = setTimeout(() => {
+    pushCloudSync().catch(err => console.error('Cloud push error:', err));
+  }, 250);
+}
+
+async function pushCloudSync() {
+  if (isPullingFromCloud) return;
+  const currentToken = token || sessionStorage.getItem('courseAdminToken');
+  if (!currentToken) return;
+
+  try {
+    const form = $('settingsForm');
+    const title = (form && form.elements.title && form.elements.title.value.trim()) || currentCloudSettings.title || 'باك نكهات بسكرة';
+    const price = (form && form.elements.price && form.elements.price.value.trim()) || currentCloudSettings.price || '15,000 دج';
+    let cleanDesc = '';
+    if (form && form.elements.description) {
+      cleanDesc = form.elements.description.value.replace(/\s*<!--TAWABIL_CLOUD_SYNC:.*?-->/gs, '').trim();
+    } else if (currentCloudSettings.description) {
+      cleanDesc = currentCloudSettings.description.replace(/\s*<!--TAWABIL_CLOUD_SYNC:.*?-->/gs, '').trim();
+    } else {
+      cleanDesc = 'باك يجمع مجموعة من التوابل المستوحاة من نكهات بسكرية.';
+    }
+
+    const newTimestamp = Date.now();
+    lastCloudSyncTimestamp = newTimestamp;
+    try { localStorage.setItem('tawabil_sync_time', String(lastCloudSyncTimestamp)); } catch {}
+
+    const syncPayload = {
+      v: 1,
+      t: newTimestamp,
+      offers: storeOffers,
+      inv: getInventory(),
+      logs: getInventoryLogs().slice(0, 5)
+    };
+
+    let tag = `<!--TAWABIL_CLOUD_SYNC:${JSON.stringify(syncPayload)}-->`;
+    let finalDesc = `${cleanDesc}\n${tag}`;
+
+    // Ensure under 2950 characters (max 3000 in Supabase Edge function validText)
+    if (finalDesc.length > 2950) {
+      syncPayload.logs = [];
+      tag = `<!--TAWABIL_CLOUD_SYNC:${JSON.stringify(syncPayload)}-->`;
+      finalDesc = `${cleanDesc}\n${tag}`;
+    }
+
+    const media = form && $('mediaEditor') ? readMediaEntries() : (currentCloudSettings.media || []);
+
+    const res = await api('settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title,
+        description: finalDesc,
+        price,
+        pixelId: '2240942626481684',
+        media
+      })
+    });
+
+    currentCloudSettings = { title, description: finalDesc, price, media };
+
+    if (syncBroadcastChannel) {
+      try {
+        syncBroadcastChannel.postMessage({ t: newTimestamp, type: 'push' });
+      } catch {}
+    }
+
+    showSyncBadge('تم التزامن سحابياً ⚡', 'updated');
+    return res;
+  } catch (err) {
+    showSyncBadge('تزامن سحابي فوري ⚡', 'normal');
+    console.error('Failed to push cloud sync:', err);
+  }
+}
+
 /* Settings Load & Sync */
 async function loadSettings() {
   try {
     const data = await api('settings');
     const form = $('settingsForm');
-    form.elements.title.value = data.title || 'باك نكهات بسكرة';
-    form.elements.description.value = data.description || '';
-    form.elements.price.value = data.price || '15,000 دج';
-    form.elements.pixelId.value = '2240942626481684';
+
+    currentCloudSettings = {
+      title: data.title || 'باك نكهات بسكرة',
+      price: data.price || '15,000 دج',
+      media: Array.isArray(data.media) ? data.media : [],
+      description: data.description || ''
+    };
+
+    parseCloudSyncFromDescription(data.description);
+
+    const cleanDesc = (data.description || '').replace(/\s*<!--TAWABIL_CLOUD_SYNC:.*?-->/gs, '').trim();
+
+    if (form) {
+      form.elements.title.value = data.title || 'باك نكهات بسكرة';
+      form.elements.description.value = cleanDesc;
+      form.elements.price.value = data.price || '15,000 دج';
+      form.elements.pixelId.value = '2240942626481684';
+    }
 
     syncPackPreview();
 
@@ -1946,9 +2170,13 @@ function initEvents() {
     $('settingsStatus').textContent = 'جارٍ الحفظ...';
 
     try {
+      const cleanDesc = form.elements.description.value.replace(/\s*<!--TAWABIL_CLOUD_SYNC:.*?-->/gs, '').trim();
+      const syncTag = buildCloudSyncTag();
+      const finalDesc = cleanDesc ? `${cleanDesc}\n${syncTag}` : syncTag;
+
       const body = {
         title: form.elements.title.value.trim(),
-        description: form.elements.description.value.trim(),
+        description: finalDesc,
         price: form.elements.price.value.trim(),
         pixelId: form.elements.pixelId.value.trim(),
         media: readMediaEntries()
@@ -1966,8 +2194,10 @@ function initEvents() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
       });
+      currentCloudSettings = body;
       syncPackPreview();
       $('settingsStatus').textContent = `تم الحفظ بنجاح (${new Date().toLocaleTimeString('ar-DZ', { hour: '2-digit', minute: '2-digit' })}) ✓`;
+      showSyncBadge('تم التزامن سحابياً ⚡', 'updated');
     } catch (error) {
       $('settingsStatus').textContent = error.message;
     } finally {
@@ -2073,8 +2303,8 @@ function initEvents() {
       $('admin-login-nav').hidden = true;
       $('dashboard').hidden = false;
       try {
-        await loadOrders();
         await loadSettings();
+        await loadOrders();
       } catch (loadErr) {
         console.error('Data load error:', loadErr);
         if ($('adminStatus')) $('adminStatus').textContent = 'تنبيه: ' + loadErr.message;
@@ -2100,11 +2330,26 @@ function initEvents() {
 
   $('logout').addEventListener('click', doLogout);
   $('mobileLogout').addEventListener('click', doLogout);
+
+  // Background Real-Time Cloud Polling & Focus Sync
+  setInterval(pullCloudSync, 4000);
+  if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+    window.addEventListener('focus', pullCloudSync);
+  }
+
+  if (syncBroadcastChannel) {
+    syncBroadcastChannel.onmessage = (event) => {
+      if (event.data && event.data.t && event.data.t > lastCloudSyncTimestamp) {
+        pullCloudSync();
+      }
+    };
+  }
 }
 
 // Start app
 initEvents();
 renderInventory();
+pullCloudSync();
 if (token) {
-  loadOrders().then(loadSettings).catch(() => {});
+  loadSettings().then(loadOrders).catch(() => {});
 }
