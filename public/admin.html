@@ -10,10 +10,10 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
-  <link rel="stylesheet" href="admin-dashboard.css?v=admin-marketing-v3">
+  <link rel="stylesheet" href="admin-dashboard.css?v=admin-stock-v5">
   <script src="assets/chart.umd.min.js"></script>
   <script src="wilayas.js"></script>
-  <script src="admin.js?v=admin-marketing-v3" defer></script>
+  <script src="admin.js?v=admin-stock-v5" defer></script>
 </head>
 <body class="admin-page">
 
@@ -726,11 +726,11 @@
                 <p class="view-subtitle">تتبع وضبط كميات الأكياس والتوابل، تسجيل شحنات التوريد الجديدة، ومراقبة تنبيهات النفاد اللحظية.</p>
               </div>
               <div class="header-actions-group">
-                <button id="openRestockModalBtn" class="button button-gold" type="button">
+                <button id="openRestockModalBtn" class="button button-gold" type="button" onclick="openRestockDialog()">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
                   <span>توريد كمية جديدة (+ Restock)</span>
                 </button>
-                <button id="openNewStockItemBtn" class="button button-white" type="button">
+                <button id="openNewStockItemBtn" class="button button-white" type="button" onclick="openStockItemDialog()">
                   <span>＋ إضافة مادة جديدة</span>
                 </button>
               </div>
@@ -785,7 +785,7 @@
                 <h2>سجل حركات المخزون والتوريد (Stock Movement Ledger)</h2>
                 <p>سجل تفصيلي لعمليات التوريد الواردة، والخصم التلقائي مع الطلبيات المؤكدة، والتعديلات اليدوية.</p>
               </div>
-              <button id="clearInventoryLogsBtn" class="button button-white" type="button" style="font-size:12px;padding:6px 12px;min-height:32px;">
+              <button id="clearInventoryLogsBtn" class="button button-white" type="button" onclick="clearInventoryLogs()" style="font-size:12px;padding:6px 12px;min-height:32px;">
                 مسح السجل القديم
               </button>
             </div>

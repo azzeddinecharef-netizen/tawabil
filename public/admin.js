@@ -1237,11 +1237,18 @@ const DEFAULT_INVENTORY_LOGS = [
 function getInventory() {
   try {
     const raw = localStorage.getItem('tawabil_inventory');
-    if (raw) return JSON.parse(raw);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+    }
   } catch (e) {
     console.error('Failed to read inventory:', e);
   }
-  return JSON.parse(JSON.stringify(DEFAULT_INVENTORY));
+  const defaults = JSON.parse(JSON.stringify(DEFAULT_INVENTORY));
+  saveInventory(defaults);
+  return defaults;
 }
 
 function saveInventory(items) {
@@ -1255,11 +1262,18 @@ function saveInventory(items) {
 function getInventoryLogs() {
   try {
     const raw = localStorage.getItem('tawabil_inventory_logs');
-    if (raw) return JSON.parse(raw);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+    }
   } catch (e) {
     console.error('Failed to read inventory logs:', e);
   }
-  return JSON.parse(JSON.stringify(DEFAULT_INVENTORY_LOGS));
+  const defaults = JSON.parse(JSON.stringify(DEFAULT_INVENTORY_LOGS));
+  saveInventoryLogs(defaults);
+  return defaults;
 }
 
 function saveInventoryLogs(logs) {
@@ -1271,203 +1285,217 @@ function saveInventoryLogs(logs) {
 }
 
 function renderInventory() {
-  const container = $('inventoryCardsContainer');
-  if (!container) return;
+  try {
+    const container = $('inventoryCardsContainer');
+    if (!container) return;
 
-  const items = getInventory();
-  const logs = getInventoryLogs();
+    const items = getInventory();
+    const logs = getInventoryLogs();
 
-  // 1. Alert Banner Check
-  const lowItems = items.filter(it => Number(it.quantity) <= Number(it.minAlert));
-  const banner = $('stockAlertBanner');
-  const bannerText = $('stockAlertText');
-  if (banner && bannerText) {
-    if (lowItems.length > 0) {
-      banner.hidden = false;
-      const names = lowItems.map(it => `«${it.name}» (المتبقي: ${it.quantity} ${it.unit} / الحد الأدنى: ${it.minAlert})`).join('، ');
-      bannerText.textContent = `تنبيه نفاد وشيك لـ ${names}. يُنصح بإجراء توريد سريع (+ Restock).`;
-    } else {
-      banner.hidden = true;
-    }
-  }
-
-  // 2. KPI Ribbon
-  if ($('invTotalItemsCount')) $('invTotalItemsCount').textContent = items.length.toLocaleString('ar-DZ');
-  if ($('invLowStockCount')) {
-    $('invLowStockCount').textContent = lowItems.length.toLocaleString('ar-DZ');
-    $('invLowStockCount').style.color = lowItems.length > 0 ? '#DC2626' : 'var(--c-text-primary)';
-  }
-  const totalUnits = items.reduce((acc, it) => acc + (Number(it.quantity) || 0), 0);
-  if ($('invTotalUnitsCount')) $('invTotalUnitsCount').textContent = totalUnits.toLocaleString('ar-DZ');
-
-  // Days coverage estimated from primary finished good
-  const mainGood = items.find(it => it.category === 'finished') || items[0];
-  if ($('invDaysCoverage') && mainGood) {
-    const dailyEst = Math.max(1, Math.round((Number(mainGood.autoDeduct) || 5) * 2.4)); // approx 12 units/day
-    const days = Math.round(Number(mainGood.quantity) / dailyEst);
-    $('invDaysCoverage').textContent = `~${days} يوم`;
-  }
-
-  // 3. Render Inventory Cards
-  container.replaceChildren();
-
-  items.forEach(item => {
-    const qty = Number(item.quantity) || 0;
-    const minAlert = Number(item.minAlert) || 20;
-    const autoDeduct = Number(item.autoDeduct) || 0;
-    const isLow = qty <= minAlert;
-    const isWarning = qty <= minAlert * 1.5;
-
-    let statusPillClass = 'status-safe';
-    let statusText = '✓ مخزون ممتاز';
-    let fillClass = 'safe';
-    let adviceText = `تغطي الاحتياجات التشغيلية بكفاءة`;
-    let fillWidth = Math.min(100, Math.max(8, Math.round((qty / Math.max(qty, minAlert * 2.5)) * 100)));
-
-    if (isLow) {
-      statusPillClass = 'status-danger';
-      statusText = '⚠️ نفاد وشيك';
-      fillClass = 'danger';
-      adviceText = `المخزون تحت الحد الأدنى! اطلب دفعة توريد فوراً`;
-      fillWidth = Math.max(8, Math.round((qty / (minAlert * 1.5)) * 30));
-    } else if (isWarning) {
-      statusPillClass = 'status-warning';
-      statusText = '⚠️ يقارب من النفاد';
-      fillClass = 'warning';
-      adviceText = `يُنصح بجدولة توريد دفعة جديدة قريباً`;
-      fillWidth = Math.min(65, Math.max(25, Math.round((qty / (minAlert * 2)) * 60)));
+    // 1. Alert Banner Check
+    const lowItems = items.filter(it => Number(it.quantity) <= Number(it.minAlert));
+    const banner = $('stockAlertBanner');
+    const bannerText = $('stockAlertText');
+    if (banner && bannerText) {
+      if (lowItems.length > 0) {
+        banner.hidden = false;
+        const names = lowItems.map(it => `«${it.name}» (المتبقي: ${it.quantity} ${it.unit} / الحد الأدنى: ${it.minAlert})`).join('، ');
+        bannerText.textContent = `تنبيه نفاد وشيك لـ ${names}. يُنصح بإجراء توريد سريع (+ Restock).`;
+      } else {
+        banner.hidden = true;
+      }
     }
 
-    const card = document.createElement('article');
-    card.className = `surface-card inventory-card ${isLow ? 'is-low-stock' : ''}`;
+    // 2. KPI Ribbon
+    if ($('invTotalItemsCount')) $('invTotalItemsCount').textContent = items.length.toLocaleString('ar-DZ');
+    if ($('invLowStockCount')) {
+      $('invLowStockCount').textContent = lowItems.length.toLocaleString('ar-DZ');
+      $('invLowStockCount').style.color = lowItems.length > 0 ? '#DC2626' : 'var(--c-text-primary)';
+    }
+    const totalUnits = items.reduce((acc, it) => acc + (Number(it.quantity) || 0), 0);
+    if ($('invTotalUnitsCount')) $('invTotalUnitsCount').textContent = totalUnits.toLocaleString('ar-DZ');
 
-    let productionInfo = '';
-    if (autoDeduct > 0) {
-      const batches = Math.floor(qty / autoDeduct);
-      productionInfo = `
-        <div class="inv-stat-row">
-          <span class="label">يكفي لإنتاج:</span>
-          <strong>${batches.toLocaleString('ar-DZ')} باقة (${autoDeduct} ${item.unit}/طلب)</strong>
+    // Days coverage estimated from primary finished good
+    const mainGood = items.find(it => it.category === 'finished') || items[0];
+    if ($('invDaysCoverage') && mainGood) {
+      const dailyEst = Math.max(1, Math.round((Number(mainGood.autoDeduct) || 5) * 2.4)); // approx 12 units/day
+      const days = Math.round(Number(mainGood.quantity) / dailyEst);
+      $('invDaysCoverage').textContent = `~${days} يوم`;
+    }
+
+    // 3. Render Inventory Cards
+    container.replaceChildren();
+
+    items.forEach(item => {
+      const qty = Number(item.quantity) || 0;
+      const minAlert = Number(item.minAlert) || 20;
+      const autoDeduct = Number(item.autoDeduct) || 0;
+      const isLow = qty <= minAlert;
+      const isWarning = qty <= minAlert * 1.5;
+
+      let statusPillClass = 'status-safe';
+      let statusText = '✓ مخزون ممتاز';
+      let fillClass = 'safe';
+      let adviceText = `تغطي الاحتياجات التشغيلية بكفاءة`;
+      let fillWidth = Math.min(100, Math.max(8, Math.round((qty / Math.max(qty, minAlert * 2.5)) * 100)));
+
+      if (isLow) {
+        statusPillClass = 'status-danger';
+        statusText = '⚠️ نفاد وشيك';
+        fillClass = 'danger';
+        adviceText = `المخزون تحت الحد الأدنى! اطلب دفعة توريد فوراً`;
+        fillWidth = Math.max(8, Math.round((qty / (minAlert * 1.5)) * 30));
+      } else if (isWarning) {
+        statusPillClass = 'status-warning';
+        statusText = '⚠️ يقارب من النفاد';
+        fillClass = 'warning';
+        adviceText = `يُنصح بجدولة توريد دفعة جديدة قريباً`;
+        fillWidth = Math.min(65, Math.max(25, Math.round((qty / (minAlert * 2)) * 60)));
+      }
+
+      const card = document.createElement('article');
+      card.className = `surface-card inventory-card ${isLow ? 'is-low-stock' : ''}`;
+
+      let productionInfo = '';
+      if (autoDeduct > 0) {
+        const batches = Math.floor(qty / autoDeduct);
+        productionInfo = `
+          <div class="inv-stat-row">
+            <span class="label">يكفي لإنتاج:</span>
+            <strong>${batches.toLocaleString('ar-DZ')} باقة (${autoDeduct} ${item.unit}/طلب)</strong>
+          </div>
+        `;
+      }
+
+      card.innerHTML = `
+        <div class="inv-head">
+          <div class="inv-head-main">
+            <div class="inv-icon-wrap">${item.icon || '📦'}</div>
+            <div class="inv-head-info">
+              <h3>${item.name}</h3>
+              <small>${item.categoryLabel || item.desc || 'صنف مسجل بالمستودع'}</small>
+            </div>
+          </div>
+        </div>
+
+        <div class="inv-body">
+          <div class="inv-stat-row">
+            <span class="label">المتبقي بالمستودع:</span>
+            <strong class="inv-qty-badge">${qty.toLocaleString('ar-DZ')} ${item.unit}</strong>
+          </div>
+          ${productionInfo}
+          <div class="inv-stat-row">
+            <span class="label">حد التنبيه الأدنى:</span>
+            <span>${minAlert} ${item.unit}</span>
+          </div>
+          <div class="inv-stat-row">
+            <span class="label">حالة المخزون:</span>
+            <span class="stock-status-pill ${statusPillClass}">${statusText}</span>
+          </div>
+
+          <div class="stock-progress-wrap">
+            <div class="stock-progress-bar">
+              <span style="width:${fillWidth}%" class="stock-fill ${fillClass}"></span>
+            </div>
+            <small>${adviceText}</small>
+          </div>
+        </div>
+
+        <div class="inv-card-actions">
+          <button type="button" class="btn-restock-quick" onclick="openRestockDialog('${item.id}')" data-item-id="${item.id}">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+            <span>توريد سريع (+ Restock)</span>
+          </button>
+          <button type="button" class="btn-edit-item" onclick="openStockItemDialog('${item.id}')" data-item-id="${item.id}" title="تعديل بيانات الصنف أو الرصيد">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          </button>
+          <button type="button" class="btn-delete-item" onclick="deleteStockItem('${item.id}')" data-item-id="${item.id}" title="حذف المادة من المستودع">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+          </button>
         </div>
       `;
+
+      card.querySelector('.btn-restock-quick')?.addEventListener('click', () => openRestockDialog(item.id));
+      card.querySelector('.btn-edit-item')?.addEventListener('click', () => openStockItemDialog(item.id));
+      card.querySelector('.btn-delete-item')?.addEventListener('click', () => deleteStockItem(item.id));
+
+      container.append(card);
+    });
+
+    // 4. Render Ledger Table Rows
+    const ledgerRows = $('inventoryLedgerRows');
+    if (ledgerRows) {
+      ledgerRows.replaceChildren();
+      if (logs.length === 0) {
+        ledgerRows.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--c-text-muted);padding:24px;">لا توجد حركات مسجلة حالياً بالسجل.</td></tr>`;
+      } else {
+        logs.slice(0, 30).forEach(log => {
+          const tr = document.createElement('tr');
+          let badgeClass = 'ledger-badge-in';
+          let badgeIcon = '⬆';
+          if (log.type === 'out') { badgeClass = 'ledger-badge-out'; badgeIcon = '⬇'; }
+          else if (log.type === 'audit') { badgeClass = 'ledger-badge-audit'; badgeIcon = '⚖'; }
+          else if (log.type === 'order') { badgeClass = 'ledger-badge-order'; badgeIcon = '📦'; }
+
+          tr.innerHTML = `
+            <td><span class="ledger-badge ${badgeClass}">${badgeIcon} ${log.typeLabel || log.type}</span></td>
+            <td><strong>${log.itemName}</strong></td>
+            <td><strong style="direction:ltr;display:inline-block;">${log.amount}</strong></td>
+            <td>${log.balanceAfter !== undefined ? `${log.balanceAfter}` : '—'}</td>
+            <td><span style="font-size:12.5px;color:var(--c-text-secondary);">${log.reference || '—'}</span></td>
+            <td><span style="font-size:12px;color:var(--c-text-muted);">${log.time || '—'}</span></td>
+          `;
+          ledgerRows.append(tr);
+        });
+      }
     }
-
-    card.innerHTML = `
-      <div class="inv-head">
-        <div class="inv-head-main">
-          <div class="inv-icon-wrap">${item.icon || '📦'}</div>
-          <div class="inv-head-info">
-            <h3>${item.name}</h3>
-            <small>${item.categoryLabel || item.desc || 'صنف مسجل بالمستودع'}</small>
-          </div>
-        </div>
-      </div>
-
-      <div class="inv-body">
-        <div class="inv-stat-row">
-          <span class="label">المتبقي بالمستودع:</span>
-          <strong class="inv-qty-badge">${qty.toLocaleString('ar-DZ')} ${item.unit}</strong>
-        </div>
-        ${productionInfo}
-        <div class="inv-stat-row">
-          <span class="label">حد التنبيه الأدنى:</span>
-          <span>${minAlert} ${item.unit}</span>
-        </div>
-        <div class="inv-stat-row">
-          <span class="label">حالة المخزون:</span>
-          <span class="stock-status-pill ${statusPillClass}">${statusText}</span>
-        </div>
-
-        <div class="stock-progress-wrap">
-          <div class="stock-progress-bar">
-            <span style="width:${fillWidth}%" class="stock-fill ${fillClass}"></span>
-          </div>
-          <small>${adviceText}</small>
-        </div>
-      </div>
-
-      <div class="inv-card-actions">
-        <button type="button" class="btn-restock-quick" data-item-id="${item.id}">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
-          <span>توريد سريع (+ Restock)</span>
-        </button>
-        <button type="button" class="btn-edit-item" data-item-id="${item.id}" title="تعديل بيانات الصنف أو الرصيد">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-        </button>
-        <button type="button" class="btn-delete-item" data-item-id="${item.id}" title="حذف المادة من المستودع">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-        </button>
-      </div>
-    `;
-
-    card.querySelector('.btn-restock-quick').addEventListener('click', () => openRestockDialog(item.id));
-    card.querySelector('.btn-edit-item').addEventListener('click', () => openStockItemDialog(item.id));
-    card.querySelector('.btn-delete-item').addEventListener('click', () => deleteStockItem(item.id));
-
-    container.append(card);
-  });
-
-  // 4. Render Ledger Table Rows
-  const ledgerRows = $('inventoryLedgerRows');
-  if (ledgerRows) {
-    ledgerRows.replaceChildren();
-    if (logs.length === 0) {
-      ledgerRows.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--c-text-muted);padding:24px;">لا توجد حركات مسجلة حالياً بالسجل.</td></tr>`;
-    } else {
-      logs.slice(0, 30).forEach(log => {
-        const tr = document.createElement('tr');
-        let badgeClass = 'ledger-badge-in';
-        let badgeIcon = '⬆';
-        if (log.type === 'out') { badgeClass = 'ledger-badge-out'; badgeIcon = '⬇'; }
-        else if (log.type === 'audit') { badgeClass = 'ledger-badge-audit'; badgeIcon = '⚖'; }
-        else if (log.type === 'order') { badgeClass = 'ledger-badge-order'; badgeIcon = '📦'; }
-
-        tr.innerHTML = `
-          <td><span class="ledger-badge ${badgeClass}">${badgeIcon} ${log.typeLabel || log.type}</span></td>
-          <td><strong>${log.itemName}</strong></td>
-          <td><strong style="direction:ltr;display:inline-block;">${log.amount}</strong></td>
-          <td>${log.balanceAfter !== undefined ? `${log.balanceAfter}` : '—'}</td>
-          <td><span style="font-size:12.5px;color:var(--c-text-secondary);">${log.reference || '—'}</span></td>
-          <td><span style="font-size:12px;color:var(--c-text-muted);">${log.time || '—'}</span></td>
-        `;
-        ledgerRows.append(tr);
-      });
-    }
+  } catch (err) {
+    console.error('Error rendering inventory:', err);
   }
 }
 
 /* Add / Edit Inventory Item Dialog */
 function openStockItemDialog(itemId = null) {
+  const modal = $('stockItemModal');
   const form = $('stockItemForm');
-  if (!form) return;
+  if (!modal || !form) {
+    console.warn('Modal or form not found for stockItemModal');
+    return;
+  }
   form.reset();
-  form.elements.itemId.value = itemId || '';
+  if (form.elements.itemId) form.elements.itemId.value = itemId || '';
 
   const items = getInventory();
   if (itemId) {
     const item = items.find(it => it.id === itemId);
     if (item) {
-      $('stockItemModalTitle').textContent = `تعديل مادة: ${item.name}`;
-      form.elements.itemName.value = item.name || '';
-      form.elements.itemCategory.value = item.category || 'finished';
-      form.elements.itemIcon.value = item.icon || '📦';
-      form.elements.itemUnit.value = item.unit || 'كيس';
-      form.elements.itemQuantity.value = item.quantity ?? 0;
-      form.elements.itemMinAlert.value = item.minAlert ?? 30;
-      form.elements.itemAutoDeduct.value = item.autoDeduct ?? 0;
-      form.elements.itemDesc.value = item.desc || '';
+      if ($('stockItemModalTitle')) $('stockItemModalTitle').textContent = `تعديل مادة: ${item.name}`;
+      if (form.elements.itemName) form.elements.itemName.value = item.name || '';
+      if (form.elements.itemCategory) form.elements.itemCategory.value = item.category || 'finished';
+      if (form.elements.itemIcon) form.elements.itemIcon.value = item.icon || '📦';
+      if (form.elements.itemUnit) form.elements.itemUnit.value = item.unit || 'كيس';
+      if (form.elements.itemQuantity) form.elements.itemQuantity.value = item.quantity ?? 0;
+      if (form.elements.itemMinAlert) form.elements.itemMinAlert.value = item.minAlert ?? 30;
+      if (form.elements.itemAutoDeduct) form.elements.itemAutoDeduct.value = item.autoDeduct ?? 0;
+      if (form.elements.itemDesc) form.elements.itemDesc.value = item.desc || '';
     }
   } else {
-    $('stockItemModalTitle').textContent = 'إضافة مادة جديدة للمستودع';
-    form.elements.itemCategory.value = 'finished';
-    form.elements.itemIcon.value = '📦';
-    form.elements.itemUnit.value = 'كيس';
-    form.elements.itemQuantity.value = 100;
-    form.elements.itemMinAlert.value = 30;
-    form.elements.itemAutoDeduct.value = 0;
+    if ($('stockItemModalTitle')) $('stockItemModalTitle').textContent = 'إضافة مادة جديدة للمستودع';
+    if (form.elements.itemName) form.elements.itemName.value = '';
+    if (form.elements.itemCategory) form.elements.itemCategory.value = 'finished';
+    if (form.elements.itemIcon) form.elements.itemIcon.value = '📦';
+    if (form.elements.itemUnit) form.elements.itemUnit.value = 'كيس';
+    if (form.elements.itemQuantity) form.elements.itemQuantity.value = 100;
+    if (form.elements.itemMinAlert) form.elements.itemMinAlert.value = 30;
+    if (form.elements.itemAutoDeduct) form.elements.itemAutoDeduct.value = 0;
+    if (form.elements.itemDesc) form.elements.itemDesc.value = '';
   }
 
-  $('stockItemModal')?.showModal();
+  try {
+    modal.showModal();
+  } catch (e) {
+    modal.setAttribute('open', '');
+  }
 }
 
 function handleStockItemSubmit(event) {
@@ -1508,7 +1536,7 @@ function handleStockItemSubmit(event) {
   }
 
   saveInventory(items);
-  $('stockItemModal')?.close();
+  try { $('stockItemModal')?.close(); } catch(e) { $('stockItemModal')?.removeAttribute('open'); }
   renderInventory();
   if ($('adminStatus')) $('adminStatus').textContent = `تم حفظ بيانات المادة «${itemData.name}» بنجاح.`;
 }
@@ -1533,9 +1561,13 @@ function deleteStockItem(itemId) {
 
 /* Quick Restock & Movement Dialog */
 function openRestockDialog(preselectedItemId = null) {
+  const modal = $('stockRestockModal');
   const form = $('stockRestockForm');
   const select = $('restockItemSelect');
-  if (!form || !select) return;
+  if (!modal || !form || !select) {
+    console.warn('Modal, form or select not found for stockRestockModal');
+    return;
+  }
 
   form.reset();
   select.replaceChildren();
@@ -1552,8 +1584,19 @@ function openRestockDialog(preselectedItemId = null) {
     select.value = preselectedItemId;
   }
 
-  $('stockRestockModal')?.showModal();
+  try {
+    modal.showModal();
+  } catch (e) {
+    modal.setAttribute('open', '');
+  }
 }
+
+// Expose on window for direct HTML onclick triggers
+window.openStockItemDialog = openStockItemDialog;
+window.openRestockDialog = openRestockDialog;
+window.deleteStockItem = deleteStockItem;
+window.renderInventory = renderInventory;
+window.clearInventoryLogs = clearInventoryLogs;
 
 function handleRestockSubmit(event) {
   event.preventDefault();
@@ -2061,6 +2104,7 @@ function initEvents() {
 
 // Start app
 initEvents();
+renderInventory();
 if (token) {
   loadOrders().then(loadSettings).catch(() => {});
 }
